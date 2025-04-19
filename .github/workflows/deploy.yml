@@ -1,32 +1,43 @@
-name: 🚀 Deploy S3 Website
+name: Terraform Deploy Infrastructure
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  terraform:
-    name: Terraform Apply
+  terraform-deploy:
+    name: Deploy Infra + Upload Static Content
     runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_domain: ${{ secrets.DOMAIN_NAME }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout Repo
+      uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.0
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init
 
-      - name: Terraform Init
-        run: terraform init
+    - name: Terraform Plan
+      working-directory: ./terraform
+      run: terraform plan -var="s3_bucket_name=$S3_BUCKET_NAME"
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+    - name: Terraform Apply
+      working-directory: ./terraform
+      run: terraform apply -auto-approve -var="s3_bucket_name=$S3_BUCKET_NAME"
+
+    - name: Upload Static Files to S3
+      run: |
+        aws s3 sync ./static-site s3://$S3_BUCKET_NAME --delete --acl public-read

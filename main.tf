@@ -1,48 +1,40 @@
-# 1) Create the bucket
-resource "aws_s3_bucket" "website" {
-  bucket = local.bucket_name
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_s3_bucket" "static_site" {
+  bucket = var.s3_bucket_name
 
   website {
     index_document = "index.html"
   }
-}
 
-# 2) Disable S3 Public Access Block so our ACL & policy can take effect
-resource "aws_s3_bucket_public_access_block" "public" {
-  bucket                  = local.bucket_name
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
+  tags = {
+    Name = "StaticSite"
+  }
 
-# 3) Add a policy granting public read to all objects
-data "aws_iam_policy_document" "public_read" {
-  statement {
-    sid    = "PublicReadGetObject"
-    effect = "Allow"
-
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-
-    actions = ["s3:GetObject"]
-    resources = [
-      "arn:aws:s3:::${local.bucket_name}/*"
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      website,
+      tags,
     ]
   }
 }
 
-resource "aws_s3_bucket_policy" "public_read" {
-  bucket = aws_s3_bucket.website.id
-  policy = data.aws_iam_policy_document.public_read.json
-}
+resource "aws_s3_bucket_policy" "allow_public_access" {
+  bucket = aws_s3_bucket.static_site.id
 
-# 4) Upload your index.html
-resource "aws_s3_bucket_object" "index" {
-  bucket       =  local.bucket_name
-  key          = "index.html"
-  source       = "${path.module}/index.html"
-  content_type = "text/html"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid:       "PublicReadGetObject",
+        Effect:    "Allow",
+        Principal: "*",
+        Action:    "s3:GetObject",
+        Resource:  "${aws_s3_bucket.static_site.arn}/*"
+      }
+    ]
+  })
 }
