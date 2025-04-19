@@ -28,7 +28,10 @@ jobs:
 
     - name: Terraform Init
       working-directory: ./terraform
-      run: terraform init
+      run: |
+        terraform init
+        terraform import cloudflare_record.site_cname ${{ secrets.CLOUDFLARE_ZONE_ID }}/${{ secrets.CLOUDFLARE_RECORD_ID }}
+
 
     - name: Terraform Plan
       working-directory: ./terraform
