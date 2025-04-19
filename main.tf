@@ -12,21 +12,25 @@ provider "aws" {
 }
 
 locals {
-  # <-- your “constant” bucket name
+  # constant bucket name
   bucket_name = "s3-bucket-demo-jh-2025-04-19"
 }
 
-# Create the bucket with static-website hosting
-resource "aws_s3_bucket" "static_site" {
+# Reference the existing bucket
+data "aws_s3_bucket" "static_site" {
   bucket = local.bucket_name
-  acl    = "public-read"
+}
 
-  website {
-    index_document = "index.html"
+# Configure it for static website hosting
+resource "aws_s3_bucket_website_configuration" "static_site" {
+  bucket = data.aws_s3_bucket.static_site.id
+
+  index_document {
+    suffix = "index.html"
   }
 }
 
-# Public-read policy
+# Build a public-read policy document
 data "aws_iam_policy_document" "public_read" {
   statement {
     sid       = "AllowPublicReadGetObject"
@@ -35,18 +39,19 @@ data "aws_iam_policy_document" "public_read" {
       identifiers = ["*"]
     }
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.static_site.arn}/*"]
+    resources = ["${data.aws_s3_bucket.static_site.arn}/*"]
   }
 }
 
+# Attach the policy to your existing bucket
 resource "aws_s3_bucket_policy" "public_read" {
-  bucket = aws_s3_bucket.static_site.id
+  bucket = data.aws_s3_bucket.static_site.id
   policy = data.aws_iam_policy_document.public_read.json
 }
 
-# Upload your index.html
+# Upload index.html
 resource "aws_s3_bucket_object" "index" {
-  bucket       = aws_s3_bucket.static_site.id
+  bucket       = data.aws_s3_bucket.static_site.id
   key          = "index.html"
   source       = "${path.module}/index.html"
   content_type = "text/html"
