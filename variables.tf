@@ -3,3 +3,8 @@ variable "aws_region" {
   type        = string
   default     = "us-east-1"
 }
+
+variable "bucket_name" {
+  description = "s3-site-demo-jh-2025-04-19"
+  type        = string
+}

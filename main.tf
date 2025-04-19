@@ -9,7 +9,7 @@ resource "aws_s3_bucket" "website" {
 
 # 2) Disable S3 Public Access Block so our ACL & policy can take effect
 resource "aws_s3_bucket_public_access_block" "public" {
-  bucket                  = aws_s3_bucket.website.id
+  bucket                  = local.bucket_name
   block_public_acls       = false
   block_public_policy     = false
   ignore_public_acls      = false
@@ -29,7 +29,7 @@ data "aws_iam_policy_document" "public_read" {
 
     actions = ["s3:GetObject"]
     resources = [
-      "${aws_s3_bucket.website.arn}/*"
+      "arn:aws:s3:::${local.bucket_name}/*"
     ]
   }
 }
@@ -41,7 +41,7 @@ resource "aws_s3_bucket_policy" "public_read" {
 
 # 4) Upload your index.html
 resource "aws_s3_bucket_object" "index" {
-  bucket       = aws_s3_bucket.website.id
+  bucket       =  local.bucket_name
   key          = "index.html"
   source       = "${path.module}/index.html"
   content_type = "text/html"
