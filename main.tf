@@ -45,5 +45,4 @@ resource "aws_s3_bucket_object" "index" {
   key          = "index.html"
   source       = "${path.module}/index.html"
   content_type = "text/html"
-  acl          = "public-read"
 }
