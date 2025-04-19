@@ -27,15 +27,15 @@ jobs:
         terraform_version: 1.5.0
 
     - name: Terraform Init
-      working-directory: .
+      working-directory: ./terraform
       run: terraform init
 
     - name: Terraform Plan
-      working-directory: .
+      working-directory: ./terraform
       run: terraform plan -var="s3_bucket_name=$S3_BUCKET_NAME"
 
     - name: Terraform Apply
-      working-directory: .
+      working-directory: ./terraform
       run: terraform apply -auto-approve -var="s3_bucket_name=$S3_BUCKET_NAME"
 
     - name: Upload Static Files to S3

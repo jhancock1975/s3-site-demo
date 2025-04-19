@@ -7,6 +7,7 @@ resource "aws_s3_bucket" "static_site" {
 
   website {
     index_document = "index.html"
+    error_document = "404.html"
   }
 
   tags = {

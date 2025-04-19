@@ -4,7 +4,7 @@ provider "cloudflare" {
 
 resource "cloudflare_record" "site_cname" {
   zone_id = var.cloudflare_zone_id
-  name    = var.domain              # e.g., "www" or "@"
+  name    = var.domain
   type    = "CNAME"
   value   = aws_s3_bucket.static_site.website_endpoint
   proxied = true
