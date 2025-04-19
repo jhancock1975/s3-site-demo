@@ -13,7 +13,7 @@ provider "aws" {
 
 locals {
   # <-- your “constant” bucket name
-  bucket_name = "my-static-site-bucket-12345"
+  bucket_name = "s3-bucket-demo-jh-2025-04-19"
 }
 
 # Create the bucket with static-website hosting
