@@ -1,0 +1,41 @@
+# ─── Terraform ────────────────────────────────────────────────────────────────
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfstate
+*.tfstate.backup
+terraform.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.tfvars
+*.tfvars.json
+secret.tfvars
+*.tfplan
+# .terraform.lock.hcl  # uncomment if you want to ignore the lockfile
+
+# ─── VS Code ─────────────────────────────────────────────────────────────────
+.vscode/
+*.code-workspace
+.vscode-test/
+.vscode-server/
+.vscode-remote/
+vscode-debug.log*
+*.log
+.history/
+*.swo
+*.swp
+*.tmp
+
+# ─── Emacs ────────────────────────────────────────────────────────────────────
+# Backup files
+*~
+# Auto-save files
+#   files named #foo#
+\#*\#
+# Lockfiles (created during editing)
+.\#*
