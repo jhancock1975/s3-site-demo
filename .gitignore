@@ -16,7 +16,7 @@ terraform.rc
 *.tfvars.json
 secret.tfvars
 *.tfplan
-# .terraform.lock.hcl  # uncomment if you want to ignore the lockfile
+.terraform.lock.hcl
 
 # ─── VS Code ─────────────────────────────────────────────────────────────────
 .vscode/
