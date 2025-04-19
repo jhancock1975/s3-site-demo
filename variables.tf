@@ -5,6 +5,6 @@ variable "aws_region" {
 }
 
 variable "bucket_name" {
-  description = "s3-site-demo-jh-2025-04-19"
+  description = "zobright.com"
   type        = string
 }
