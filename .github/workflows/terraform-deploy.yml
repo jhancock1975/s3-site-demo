@@ -30,7 +30,7 @@ jobs:
       working-directory: ./terraform
       run: |
         terraform init
-        terraform import input=false -var="s3_bucket_name=${{ secrets.S3_BUCKET_NAME }}" cloudflare_record.site_cname ${{ secrets.CLOUDFLARE_ZONE_ID }}/${{ secrets.CLOUDFLARE_RECORD_ID }}
+        terraform import -input=false -var="s3_bucket_name=${{ secrets.S3_BUCKET_NAME }}" cloudflare_record.site_cname ${{ secrets.CLOUDFLARE_ZONE_ID }}/${{ secrets.CLOUDFLARE_RECORD_ID }}
 
 
     - name: Terraform Plan
