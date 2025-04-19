@@ -1,58 +1,50 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 4.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
-locals {
-  # constant bucket name
-  bucket_name = "s3-bucket-demo-jh-2025-04-19"
-}
-
-# Reference the existing bucket
-data "aws_s3_bucket" "static_site" {
+# 1) Create the bucket
+resource "aws_s3_bucket" "website" {
   bucket = local.bucket_name
-}
+  acl    = "public-read"
 
-# Configure it for static website hosting
-resource "aws_s3_bucket_website_configuration" "static_site" {
-  bucket = data.aws_s3_bucket.static_site.id
-
-  index_document {
-    suffix = "index.html"
+  website {
+    index_document = "index.html"
   }
 }
 
-# Build a public-read policy document
+# 2) Disable S3 Public Access Block so our ACL & policy can take effect
+resource "aws_s3_bucket_public_access_block" "public" {
+  bucket                  = aws_s3_bucket.website.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# 3) Add a policy granting public read to all objects
 data "aws_iam_policy_document" "public_read" {
   statement {
-    sid       = "AllowPublicReadGetObject"
+    sid    = "PublicReadGetObject"
+    effect = "Allow"
+
     principals {
       type        = "AWS"
       identifiers = ["*"]
     }
-    actions   = ["s3:GetObject"]
-    resources = ["${data.aws_s3_bucket.static_site.arn}/*"]
+
+    actions = ["s3:GetObject"]
+    resources = [
+      "${aws_s3_bucket.website.arn}/*"
+    ]
   }
 }
 
-# Attach the policy to your existing bucket
 resource "aws_s3_bucket_policy" "public_read" {
-  bucket = data.aws_s3_bucket.static_site.id
+  bucket = aws_s3_bucket.website.id
   policy = data.aws_iam_policy_document.public_read.json
 }
 
-# Upload index.html
+# 4) Upload your index.html
 resource "aws_s3_bucket_object" "index" {
-  bucket       = data.aws_s3_bucket.static_site.id
+  bucket       = aws_s3_bucket.website.id
   key          = "index.html"
   source       = "${path.module}/index.html"
   content_type = "text/html"
+  acl          = "public-read"
 }
