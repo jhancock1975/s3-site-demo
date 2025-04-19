@@ -23,7 +23,7 @@ resource "cloudflare_page_rule" "cache_everything" {
   zone_id = var.cloudflare_zone_id
   target  = "https://${var.domain}/*"
 
-  actions = {
+  actions  {
     cache_level     = "cache_everything"
     edge_cache_ttl  = 3600
   }
