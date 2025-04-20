@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: Build & Deploy
 
 on:
@@ -8,27 +9,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # —————————————
-    # apply these to *all* `run:` steps
-    # —————————————
+    # Apply these defaults to every `run:` step
     defaults:
       run:
         working-directory: terraform
-        # Terraform will error out if it ever needs input
-        env:
-          TF_INPUT: false
 
-    # —————————————
-    # all of your environment & TF_VAR mappings,
-    # defined ONCE for the entire job
-    # —————————————
+    # All your environment vars (including TF_INPUT) in one place
     env:
-      # AWS creds for the provider plugin
+      # Make Terraform non‑interactive
+      TF_INPUT: false
+
+      # AWS creds for Terraform’s AWS provider
       AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION:            ${{ secrets.AWS_REGION }}
 
-      # Cloudflare plugin (it will read CLOUDFLARE_API_TOKEN itself)
+      # Cloudflare provider
       CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
       CLOUDFLARE_RECORD_ID:  ${{ secrets.CLOUDFLARE_RECORD_ID }}
@@ -63,7 +59,6 @@ jobs:
       - name: Init, Import & Apply
         run: |
           terraform init
-          # Import if you already have a record; `|| true` lets first‐time creates succeed
           terraform import cloudflare_record.site_cname \
             ${CLOUDFLARE_ZONE_ID}/${CLOUDFLARE_RECORD_ID} || true
           terraform apply -auto-approve
