@@ -30,5 +30,4 @@ jobs:
         run: |
           aws s3 sync static/ s3://zobright.com/ \
             --acl public-read \
-            --delete \
-            --verbose \
+            --delete
