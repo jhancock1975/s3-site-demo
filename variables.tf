@@ -7,4 +7,5 @@ variable "region" {
 variable "bucket_name" {
   description = "zobright.com"
   type        = string
+  default = "zobright.com"
 }
