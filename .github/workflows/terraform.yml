@@ -1,4 +1,3 @@
-# .github/workflows/deploy.yml
 name: Build & Deploy
 
 on:
@@ -9,25 +8,31 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # everything under "run:" defaults into the terraform/ folder
     defaults:
       run:
         working-directory: terraform
 
     env:
+      # Prevent Terraform from prompting
       TF_INPUT: false
 
+      # AWS provider creds (Terraform's AWS provider reads AWS_REGION too)
       AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION:            ${{ secrets.AWS_REGION }}
 
+      # Cloudflare provider creds
       CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
       CLOUDFLARE_RECORD_ID:  ${{ secrets.CLOUDFLARE_RECORD_ID }}
 
-      TF_VAR_s3_bucket_name:     ${{ secrets.S3_BUCKET_NAME }}
-      TF_VAR_domain_name:        ${{ secrets.DOMAIN_NAME }}
-      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      # Terraform input variables
+      TF_VAR_aws_region:            ${{ secrets.AWS_REGION }}
+      TF_VAR_s3_bucket_name:        ${{ secrets.S3_BUCKET_NAME }}
+      TF_VAR_domain_name:           ${{ secrets.DOMAIN_NAME }}
+      TF_VAR_cloudflare_api_token:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_cloudflare_record_id:  ${{ secrets.CLOUDFLARE_RECORD_ID }}
 
     steps:
       - name: Checkout
@@ -39,13 +44,11 @@ jobs:
           go-version: '1.20'
 
       - name: Build & zip Lambda
-        # override the default to point at lambda/
         working-directory: lambda
         run: |
           go mod tidy
           GOOS=linux GOARCH=amd64 go build -o function main.go
           zip -j function.zip function
-          # move it into the terraform/ folder for Terraform to pick up
           mv function.zip ../terraform/
 
       - name: Setup Terraform
