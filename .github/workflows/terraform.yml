@@ -1,64 +1,43 @@
-name: Build & Deploy
+name: Terraform CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: terraform
-
     env:
-      # Prevent Terraform from prompting
-      TF_INPUT: false
-
-      # AWS provider creds (Terraform's AWS provider reads AWS_REGION too)
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION:            ${{ secrets.AWS_REGION }}
-
-      # Cloudflare provider creds
-      CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
-      CLOUDFLARE_RECORD_ID:  ${{ secrets.CLOUDFLARE_RECORD_ID }}
-
-      # Terraform input variables
-      TF_VAR_aws_region:            ${{ secrets.AWS_REGION }}
-      TF_VAR_s3_bucket_name:        ${{ secrets.S3_BUCKET_NAME }}
-      TF_VAR_domain_name:           ${{ secrets.DOMAIN_NAME }}
-      TF_VAR_cloudflare_api_token:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      TF_VAR_cloudflare_zone_id:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
-      TF_VAR_cloudflare_record_id:  ${{ secrets.CLOUDFLARE_RECORD_ID }}
-
+      AWS_REGION: ${{ secrets.AWS_REGION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-
-      - name: Build & zip Lambda
-        working-directory: lambda
-        run: |
-          go mod tidy
-          GOOS=linux GOARCH=amd64 go build -o function main.go
-          zip -j function.zip function
-          mv function.zip ../terraform/
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: '1.5.0'
+          terraform_version: "1.5.0"
 
-      - name: Init, Import & Apply
-        run: |
-          terraform init
-          terraform import cloudflare_record.site_cname \
-            ${CLOUDFLARE_ZONE_ID}/${CLOUDFLARE_RECORD_ID} || true
-          terraform apply -auto-approve
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Package Deployment
+        run: zip -r deployment.zip .
+
+      - name: Upload Deployment Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-package
+          path: deployment.zip
