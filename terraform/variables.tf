@@ -1,20 +1,29 @@
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}
+
 variable "s3_bucket_name" {
-  description = "The name of the S3 bucket to host static files"
+  description = "Name of the S3 bucket"
+  type        = string
+}
+
+variable "domain_name" {
+  description = "Domain name (e.g., example.com)"
   type        = string
 }
 
 variable "cloudflare_api_token" {
-  description = "Cloudflare API Token"
+  description = "Cloudflare API token"
   type        = string
-  sensitive   = true
 }
 
 variable "cloudflare_zone_id" {
-  description = "Cloudflare Zone ID"
+  description = "Cloudflare zone ID"
   type        = string
 }
 
-variable "domain" {
-  description = "The domain to configure via Cloudflare"
+variable "cloudflare_record_id" {
+  description = "Cloudflare record ID"
   type        = string
 }
