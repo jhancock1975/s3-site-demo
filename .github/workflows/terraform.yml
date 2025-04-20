@@ -9,27 +9,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # Apply these defaults to every `run:` step
+    # everything under "run:" defaults into the terraform/ folder
     defaults:
       run:
         working-directory: terraform
 
-    # All your environment vars (including TF_INPUT) in one place
     env:
-      # Make Terraform non‑interactive
       TF_INPUT: false
 
-      # AWS creds for Terraform’s AWS provider
       AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION:            ${{ secrets.AWS_REGION }}
 
-      # Cloudflare provider
       CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
       CLOUDFLARE_RECORD_ID:  ${{ secrets.CLOUDFLARE_RECORD_ID }}
 
-      # Your Terraform variables
       TF_VAR_s3_bucket_name:     ${{ secrets.S3_BUCKET_NAME }}
       TF_VAR_domain_name:        ${{ secrets.DOMAIN_NAME }}
       TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
@@ -44,11 +39,13 @@ jobs:
           go-version: '1.20'
 
       - name: Build & zip Lambda
+        # override the default to point at lambda/
+        working-directory: lambda
         run: |
-          cd lambda
           go mod tidy
           GOOS=linux GOARCH=amd64 go build -o function main.go
           zip -j function.zip function
+          # move it into the terraform/ folder for Terraform to pick up
           mv function.zip ../terraform/
 
       - name: Setup Terraform
