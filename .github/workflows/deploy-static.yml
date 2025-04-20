@@ -28,5 +28,5 @@ jobs:
 
       - name: Sync changed files to S3
         run: |
-          aws s3 sync static/ s3://zobright.com/ \
+          aws s3 sync static/ s3://taptupo.com/ \
             --delete
