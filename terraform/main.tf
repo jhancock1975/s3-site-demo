@@ -107,7 +107,7 @@ resource "aws_lambda_permission" "apigw" {
 }
 
 # Cloudflare DNS
-resource "cloudflare_record" "site" {
+resource "cloudflare_record" "site_cname" {
   zone_id = var.cloudflare_zone_id
   name    = var.domain_name
   type    = "CNAME"
