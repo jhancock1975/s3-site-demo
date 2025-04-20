@@ -5,7 +5,6 @@ provider "aws" {
 # S3 bucket for static website
 resource "aws_s3_bucket" "static_site" {
   bucket = var.bucket_name
-  acl    = "public-read"
 
   website {
     index_document = "index.html"
@@ -90,7 +89,7 @@ resource "aws_lambda_function" "example" {
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   handler          = "index.handler"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs22.x"
 }
 
 # HTTP API Gateway v2 (HTTP API)
