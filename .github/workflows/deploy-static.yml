@@ -1,0 +1,33 @@
+# .github/workflows/deploy-static.yml
+name: Deploy Static Assets to S3
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'static/**'
+
+jobs:
+  deploy-static:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync changed files to S3
+        run: |
+          aws s3 sync static/ s3://zobright.com/ \
+            --acl public-read \
+            --delete \
+            --quiet
