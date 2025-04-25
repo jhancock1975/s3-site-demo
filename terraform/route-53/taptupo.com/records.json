@@ -1,0 +1,52 @@
+{
+    "ResourceRecordSets": [
+        {
+            "Name": "taptupo.com.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3s1lwcqxkwnp7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "taptupo.com.",
+            "Type": "NS",
+            "TTL": 60,
+            "ResourceRecords": [
+                {
+                    "Value": "ns-1990.awsdns-56.co.uk"
+                },
+                {
+                    "Value": "ns-565.awsdns-06.net"
+                },
+                {
+                    "Value": "ns-1531.awsdns-63.org"
+                },
+                {
+                    "Value": "ns-447.awsdns-55.com"
+                }
+            ]
+        },
+        {
+            "Name": "taptupo.com.",
+            "Type": "SOA",
+            "TTL": 60,
+            "ResourceRecords": [
+                {
+                    "Value": "ns-1990.awsdns-56.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+                }
+            ]
+        },
+        {
+            "Name": "_0f5e2992b1acf0412548e0b46c9ae700.taptupo.com.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_cadb0f7e3e853a282cc589b457ab3395.xlfgrmvvlj.acm-validations.aws."
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+{
+    "Owner": {
+        "DisplayName": "jhancock1975",
+        "ID": "b0fd5c8941c929e93f38e73ee7129e47317bb88a1863df3008e190089ef7a657"
+    },
+    "Grants": [
+        {
+            "Grantee": {
+                "DisplayName": "jhancock1975",
+                "ID": "b0fd5c8941c929e93f38e73ee7129e47317bb88a1863df3008e190089ef7a657",
+                "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+        }
+    ]
+}
