@@ -25,21 +25,33 @@ jobs:
       - name: Build & Zip Lambda
         run: |
           cd lambda
-
-          # fetch dependencies (from lambda/go.mod)
           go mod download
-
-          # compile for Linux (Amazon Linux)
-          GOOS=linux GOARCH=amd64 \
-            go build -o main exchange_handler.go
-
-          # zip into repo-root/deployment.zip
+          GOOS=linux GOARCH=amd64 go build -o main exchange_handler.go
           zip ../deployment.zip main
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            us-east-1
+
+      - name: Create Lambda if missing
+        run: |
+          if ! aws lambda get-function --function-name exchangeHandler >/dev/null 2>&1; then
+            aws lambda create-function \
+              --function-name exchangeHandler \
+              --runtime go1.x \
+              --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/YOUR_LAMBDA_EXECUTION_ROLE \
+              --handler main \
+              --zip-file fileb://deployment.zip
+          fi
 
       - name: Deploy to AWS Lambda
         uses: appleboy/lambda-action@v0.1.1
         with:
           access_key_id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region:            us-east-1       
+          region:            us-east-1
+          function_name:     exchangeHandler
           zip_file:          deployment.zip
