@@ -15,31 +15,3 @@ body {
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
-
-.login-button, .logout-button {
-  padding: 12px 24px;
-  font-size: 18px;
-  font-family: Arial, sans-serif;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin: 10px;
-}
-
-.login-button {
-  background-color: #4285F4;
-  color: white;
-}
-
-.login-button:hover {
-  background-color: #357ae8;
-}
-
-.logout-button {
-  background-color: #db4437;
-  color: white;
-}
-
-.logout-button:hover {
-  background-color: #c33c2e;
-}
