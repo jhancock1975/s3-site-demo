@@ -1,0 +1,47 @@
+name: Terraform API Gateway
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+        - '/IaaC/api_gateway/**'
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 🌍 Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: iac/api_gateway
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: iac/api_gateway
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: iac/api_gateway
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION:            ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+        working-directory: iac/api_gateway
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION:            ${{ secrets.AWS_REGION }}
