@@ -3,11 +3,8 @@ name: Deploy Go Lambda Function
 on:
   push:
     branches:
-      - main # You can change this to your deploy branch
-    paths:
-      - lambda/exchange_handler.go
-    workflow_dispatch:
-
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,23 +20,26 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22' # Update this if you use a different Go version
+          go-version: '1.22'
+
+      - name: Download Go module dependencies
+        run: go mod download
 
       - name: Build Go Binary for Lambda
         run: |
+          cd lambda
           GOOS=linux GOARCH=amd64 go build -o main exchange_handler.go
 
       - name: Zip Binary
-        run: zip deployment.zip main
+        run: |
+          cd lambda
+          zip ../deployment.zip main
 
       - name: Deploy to AWS Lambda
         uses: appleboy/lambda-action@v0.1.1
         with:
           access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region: us-east-1 # Change if your region is different
+          region: us-east-1          # ← adjust if needed
           function_name: exchangeHandler
           zip_file: deployment.zip
-          # optional:
-          # role: your-custom-role-arn
-          # environment: '{"ENV_VAR_1":"value1","ENV_VAR_2":"value2"}'
