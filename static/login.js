@@ -6,7 +6,13 @@ function login() {
   const scope = "email openid profile";
   const identityProvider = "Google";
 
-  const loginUrl = `${cognitoDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=${responseType}&client_id=${clientId}&scope=${encodeURIComponent(scope)}`;
+  const loginUrl = `${cognitoDomain}/oauth2/authorize` +
+    `?identity_provider=${identityProvider}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=${responseType}` +
+    `&client_id=${clientId}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&prompt=select_account`;
 
   window.location.href = loginUrl;
 }
