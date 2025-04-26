@@ -42,7 +42,7 @@ jobs:
             aws lambda create-function \
               --function-name exchangeHandler \
               --runtime go1.x \
-              --role arn:aws:iam:${{ secrets.AWS_ACCOUNT_ID }}:role/lambda_exec_role \
+              --role arn:aws:iam:${{ secrets.AWS_ACCOUNT_ID }}::role/lambda_exec_role \
               --handler main \
               --zip-file fileb://deployment.zip
           fi
