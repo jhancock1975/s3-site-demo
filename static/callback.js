@@ -27,9 +27,10 @@ async function sendCodeToBackend(code) {
 window.onload = function () {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
-
   if (code) {
-    sendCodeToBackend(code);
+    sendCodeToBackend(code)      // same as you already have in callback.js
+      .then(() => { /* redirect on success */ })
+      .catch(() => { /* show error */ });
   } else {
     document.getElementById("message").textContent = "No authorization code found.";
   }
