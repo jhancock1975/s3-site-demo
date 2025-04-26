@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-        - '/IaaC/api_gateway/**'
+        - 'IaaC/api_gateway/**'
   workflow_dispatch:
 
 jobs:
