@@ -11,8 +11,7 @@ function login() {
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&response_type=${responseType}` +
     `&client_id=${clientId}` +
-    `&scope=${encodeURIComponent(scope)}` +
-    `&prompt=select_account`;
+    `&scope=${encodeURIComponent(scope)}`
 
   window.location.href = loginUrl;
 }
