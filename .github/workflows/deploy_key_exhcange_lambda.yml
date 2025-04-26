@@ -22,24 +22,24 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Download Go module dependencies
-        run: go mod download
-
-      - name: Build Go Binary for Lambda
+      - name: Build & Zip Lambda
         run: |
           cd lambda
-          GOOS=linux GOARCH=amd64 go build -o main exchange_handler.go
 
-      - name: Zip Binary
-        run: |
-          cd lambda
+          # fetch dependencies (from lambda/go.mod)
+          go mod download
+
+          # compile for Linux (Amazon Linux)
+          GOOS=linux GOARCH=amd64 \
+            go build -o main exchange_handler.go
+
+          # zip into repo-root/deployment.zip
           zip ../deployment.zip main
 
       - name: Deploy to AWS Lambda
         uses: appleboy/lambda-action@v0.1.1
         with:
-          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          access_key_id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region: us-east-1          # ← adjust if needed
-          function_name: exchangeHandler
-          zip_file: deployment.zip
+          region:            us-east-1       
+          zip_file:          deployment.zip
