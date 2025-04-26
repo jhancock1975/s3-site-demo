@@ -1,0 +1,18 @@
+{
+    "items": [
+        {
+            "id": "2pxfzx",
+            "parentId": "zoysn4pqqd",
+            "pathPart": "exchange",
+            "path": "/exchange",
+            "resourceMethods": {
+                "OPTIONS": {},
+                "POST": {}
+            }
+        },
+        {
+            "id": "zoysn4pqqd",
+            "path": "/"
+        }
+    ]
+}

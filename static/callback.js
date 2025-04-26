@@ -1,6 +1,7 @@
 async function sendCodeToBackend(code) {
+  const API_BASE="https://4aaqrkm65b.execute-api.us-east-1.amazonaws.com/prod"
   try {
-    const response = await fetch("/exchange", {
+    const response = await fetch(`${API_BASE}/exchange`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
