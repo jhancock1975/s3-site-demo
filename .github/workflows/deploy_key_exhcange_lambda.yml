@@ -26,9 +26,13 @@ jobs:
         run: |
           cd lambda
           go mod download
-          GOOS=linux GOARCH=amd64 go build -o main exchange_handler.go
-          zip ../deployment.zip main
 
+          # Compile for the custom runtime; output must be named 'bootstrap'
+          GOOS=linux GOARCH=amd64 go build -o bootstrap exchange_handler.go
+
+          # Zip that single 'bootstrap' file at the root of the archive
+          zip ../deployment.zip bootstrap
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -36,14 +40,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            us-east-1
 
+
       - name: Create Lambda if missing
         run: |
+          # fetch AWS account id (so you don't need it as a secret)
+          echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+
           if ! aws lambda get-function --function-name exchangeHandler >/dev/null 2>&1; then
             aws lambda create-function \
               --function-name exchangeHandler \
-              --runtime go1.x \
+              --runtime provided.al2023 \
               --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/lambda_exec_role \
-              --handler main \
+              --handler bootstrap \
               --zip-file fileb://deployment.zip
           fi
 
