@@ -107,3 +107,13 @@ aws apigateway create-deployment \
 
 echo "API deployed! Invoke URL:"
 echo "  https://$API_ID.execute-api.$REGION.amazonaws.com/prod/exchange"
+
+# had to add these environment variables to fix a 503 / internal server error
+aws lambda update-function-configuration \
+  --function-name exchangeHandler \
+  --environment "Variables={
+    CLIENT_ID=4mt7pq78npi8s55lsetnq1g5c7,
+    CLIENT_SECRET=get from the console,
+    REDIRECT_URI=https://taptupo.com/callback.html,
+    COGNITO_DOMAIN=us-east-13k54foqzh.auth.us-east-1.amazoncognito.com
+  }"
