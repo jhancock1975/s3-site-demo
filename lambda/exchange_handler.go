@@ -113,7 +113,7 @@ func clientError(status int, msg string) (events.APIGatewayProxyResponse, error)
 
 func serverError(err error) (events.APIGatewayProxyResponse, error) {
 	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-	return clientError(500, "Internal server error"), nil
+	return clientError(500, "Internal server error")
 }
 
 func corsHeaders() map[string]string {
