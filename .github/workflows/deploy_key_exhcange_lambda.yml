@@ -1,67 +1,74 @@
-name: Deploy Go Lambda Function
+name: Deploy Changed Go Lambda Functions
 
 on:
   push:
     branches:
       - main
+    # Trigger only when files under lambda/ change
     paths:
       - 'lambda/**'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: read  # required for checkout
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Build & Zip Lambda
-        run: |
-          cd lambda
-          go mod download
-
-          # Compile for the custom runtime; output must be named 'bootstrap'
-          GOOS=linux GOARCH=amd64 go build -o bootstrap exchange_handler.go
-
-          # Zip that single 'bootstrap' file at the root of the archive
-          zip ../deployment.zip bootstrap
-      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            us-east-1
+          aws-region: us-east-1
 
-
-      - name: Create Lambda if missing
+      - name: Fetch AWS Account ID
+        id: fetch-account
         run: |
-          # fetch AWS account id (so you don't need it as a secret)
           echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
 
-          if ! aws lambda get-function --function-name exchangeHandler >/dev/null 2>&1; then
-            aws lambda create-function \
-              --function-name exchangeHandler \
-              --runtime provided.al2023 \
-              --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/lambda_exec_role \
-              --handler bootstrap \
-              --zip-file fileb://deployment.zip
-          fi
+      - name: Detect changed lambdas
+        id: detect
+        run: |
+          # Compare against main to find all .go files changed under lambda/
+          git fetch --no-tags --depth=2 origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD -- 'lambda/*.go' \
+            | sed 's|lambda/||;s|\.go||' \
+            | sort -u \
+            | tr '\n' ' ')
+          echo "functions=$CHANGED" >> $GITHUB_ENV
+          echo "Changed functions: $CHANGED"
 
-      - name: Deploy to AWS Lambda
-        uses: appleboy/lambda-action@v0.1.1
-        with:
-          access_key_id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region:            us-east-1
-          function_name:     exchangeHandler
-          zip_file:          deployment.zip
+      - name: Build, zip, and deploy changed lambdas
+        if: ${{ env.functions != '' }}
+        run: |
+          for fn in $functions; do
+            echo "\n=== Deploying Lambda: $fn ==="
+            cd lambda
+
+            # Download deps and build
+            go mod download
+            GOOS=linux GOARCH=amd64 go build -o bootstrap ${fn}.go
+
+            # Package
+            zip ../${fn}.zip bootstrap
+            cd ..
+
+            # Create if missing, else update
+            if ! aws lambda get-function --function-name $fn >/dev/null 2>&1; then
+              aws lambda create-function \
+                --function-name $fn \
+                --runtime provided.al2023 \
+                --role arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role \
+                --handler bootstrap \
+                --zip-file fileb://./${fn}.zip
+            else
+              aws lambda update-function-code \
+                --function-name $fn \
+                --zip-file fileb://./${fn}.zip
+            fi
+          done
