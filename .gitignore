@@ -39,3 +39,6 @@ vscode-debug.log*
 \#*\#
 # Lockfiles (created during editing)
 .\#*
+# compressed archives
+*.gz
+*.zip

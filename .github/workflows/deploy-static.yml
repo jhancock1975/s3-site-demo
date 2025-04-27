@@ -16,17 +16,58 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (with history)
         uses: actions/checkout@v3
+        with:
+          # need at least two commits to diff against the parent
+          fetch-depth: 2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Sync changed files to S3
+      - name: Deploy only changed static files and invalidate cache
         run: |
-          aws s3 sync static/ s3://taptupo.com/ \
-            --delete
+          # ensure we have the parent commit
+          git fetch --no-tags --prune --unshallow || true
+
+          # list all files added/modified/deleted under static/
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^static/' || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "→ No static files changed; skipping S3 upload + cache invalidation."
+            exit 0
+          fi
+
+          echo "→ Changed files:"
+          printf '  %s\n' $CHANGED
+
+          # prepare an array of CloudFront paths to invalidate
+          PATHS=()
+
+          for file in $CHANGED; do
+            # strip off the leading directory ("static/") so the key matches exactly
+            key="${file#static/}"
+
+            if [ -f "$file" ]; then
+              echo "  • Uploading: $file → s3://taptupo.com/$key"
+              aws s3 cp "$file" "s3://taptupo.com/$key"
+            else
+              echo "  • Removing:  s3://taptupo.com/$key"
+              aws s3 rm "s3://taptupo.com/$key"
+            fi
+
+            # add leading slash for CloudFront invalidation
+            PATHS+=("/$key")
+          done
+
+          echo "→ Creating CloudFront invalidation for paths:"
+          printf '  %s\n' "${PATHS[@]}"
+
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "${PATHS[@]}"

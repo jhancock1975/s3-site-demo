@@ -5,22 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Static Site + Lambda</title>
   <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    button { padding: 0.5rem 1rem; font-size: 1rem; }
-    pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; }
+   body { font-family: sans-serif; padding: 2rem; }
+   button { padding: 0.5rem 1rem; font-size: 1rem; }
+   pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; }
   </style>
 </head>
 <body>
+  <div id="authButtons" style="margin-bottom:1rem;">
+    <button id="loginBtn">Login</button>
+    <button id="logoutBtn">Logout</button>
+  </div>
   <h1>Welcome to My Fun Site</h1>
   <p>Click the button below to invoke the Lambda function via API Gateway:</p>
   <button id="invokeBtn">Call Lambda</button>
   <h2>Response:</h2>
   <pre id="response">--</pre>
-
   <script>
     // ← Replace with your Terraform output value:
     const apiBase = 'https://taptupo.com';
-
     document.getElementById('invokeBtn').addEventListener('click', async () => {
       const out = document.getElementById('response');
       out.textContent = 'Calling…';
@@ -34,6 +36,19 @@
       }
     });
   </script>
+  <script>
+    // Authentication button logic
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    function updateAuthButtons() {
+      const loggedIn = !!localStorage.getItem('id_token');
+      loginBtn.style.display = loggedIn ? 'none' : 'inline-block';
+      logoutBtn.style.display = loggedIn ? 'inline-block' : 'none';
+    }
+    loginBtn.addEventListener('click', () => window.location.href = 'login.html');
+    logoutBtn.addEventListener('click', () => window.location.href = 'logout.html');
+    updateAuthButtons();
+    window.addEventListener('storage', updateAuthButtons);
+  </script>
 </body>
 </html>
-
