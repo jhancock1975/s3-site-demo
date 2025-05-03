@@ -1,4 +1,3 @@
-# .github/workflows/deploy-static.yml
 name: Deploy Static Assets to S3
 
 on:
@@ -19,10 +18,9 @@ jobs:
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
     steps:
-      - name: Checkout repository (with history)
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          # need at least two commits to diff against the parent
           fetch-depth: 2
 
       - name: Configure AWS credentials
@@ -30,44 +28,30 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy only changed static files and invalidate cache
+      - name: Sync static assets to S3 (prune & detect changes)
         run: |
-          # ensure we have the parent commit
-          git fetch --no-tags --prune --unshallow || true
+          echo "→ Syncing static/ → s3://taptupo.com/ (with deletions)…"
+          CHANGES=$(aws s3 sync static/ s3://taptupo.com/ --delete \
+                    | grep -E '^(upload|delete):' \
+                    | awk '{print $2}')
+          
+          if [ -n "$CHANGES" ]; then
+            echo "→ Detected changes:"
+            echo "$CHANGES"
+            
+            # Build an array of "/path/to/object" entries for invalidation
+            PATHS=()
+            for FILE in $CHANGES; do
+              PATHS+=( "/${FILE}" )
+            done
 
-          # list all files added/modified/deleted under static/
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^static/' || true)
-
-          if [ -z "$CHANGED" ]; then
-            echo "→ No static files changed; skipping S3 upload + cache invalidation."
-            exit 0
+            echo "→ Invalidating those paths on CloudFront…"
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "${PATHS[@]}"
+          else
+            echo "→ No changed or deleted files; skipping CloudFront invalidation."
           fi
 
-          echo "→ Changed files:"
-          printf '  %s\n' $CHANGED
-
-          # prepare an array of CloudFront paths to invalidate
-          PATHS=()
-
-          for file in $CHANGED; do
-            # strip off the leading directory ("static/") so the key matches exactly
-            key="${file#static/}"
-
-            if [ -f "$file" ]; then
-              echo "  • Uploading: $file → s3://taptupo.com/$key"
-              aws s3 cp "$file" "s3://taptupo.com/$key"
-            else
-              echo "  • Removing:  s3://taptupo.com/$key"
-              aws s3 rm "s3://taptupo.com/$key"
-            fi
-
-            # add leading slash for CloudFront invalidation
-            PATHS+=("/$key")
-          done
-
-          echo "→ Creating CloudFront invalidation for paths:"
-          printf '  %s\n' "${PATHS[@]}"
-
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "${PATHS[@]}"
+      - name: Done
+        run: echo "Static deploy complete."
