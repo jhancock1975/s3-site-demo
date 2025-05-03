@@ -2,53 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Static Site + Lambda</title>
-  <style>
-   body { font-family: sans-serif; padding: 2rem; }
-   button { padding: 0.5rem 1rem; font-size: 1rem; }
-   pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taptupo.com</title>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
 </head>
 <body>
-  <div id="authButtons" style="margin-bottom:1rem;">
-    <button id="loginBtn">Login</button>
-    <button id="logoutBtn">Logout</button>
-  </div>
-  <h1>Welcome to My Fun Site</h1>
-  <p>Click the button below to invoke the Lambda function via API Gateway:</p>
-  <button id="invokeBtn">Call Lambda</button>
-  <h2>Response:</h2>
-  <pre id="response">--</pre>
-  <script>
-    // ← Replace with your Terraform output value:
-    const apiBase = 'https://taptupo.com';
-    document.getElementById('invokeBtn').addEventListener('click', async () => {
-      const out = document.getElementById('response');
-      out.textContent = 'Calling…';
-      try {
-        const resp = await fetch(`${apiBase}/hello`);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const json = await resp.json();
-        out.textContent = JSON.stringify(json, null, 2);
-      } catch (err) {
-        out.textContent = `Error: ${err.message}`;
-      }
-    });
-  </script>
-  <script>
-    // Authentication button logic
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    function updateAuthButtons() {
-      const loggedIn = !!localStorage.getItem('id_token');
-      loginBtn.style.display = loggedIn ? 'none' : 'inline-block';
-      logoutBtn.style.display = loggedIn ? 'inline-block' : 'none';
-    }
-    loginBtn.addEventListener('click', () => window.location.href = 'login.html');
-    logoutBtn.addEventListener('click', () => window.location.href = 'logout.html');
-    updateAuthButtons();
-    window.addEventListener('storage', updateAuthButtons);
-  </script>
+  <header class="site-header">
+    <img src="assets/logo.png" alt="Taptupo logo" class="logo" />
+    <h1>Taptupo.com</h1>
+  </header>
+
+  <main class="container">
+    <section id="authButtons">
+      <button id="loginBtn">Log In</button>
+      <button id="logoutBtn">Log Out</button>
+    </section>
+
+    <section id="editorContainer" class="hidden">
+      <textarea id="markdownEditor"></textarea>
+      <button id="saveMd">Save</button>
+    </section>
+
+    <section id="content">
+      <pre id="output">Welcome to Taptupo!</pre>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+  <script src="js/login.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/editor.js"></script>
 </body>
 </html>

@@ -1,0 +1,71 @@
+:root {
+  --primary-color: #2C3E50;
+  --accent-color: #E74C3C;
+  --bg-color: #ECF0F1;
+  --text-color: #333;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+.site-header {
+  display: flex;
+  align-items: center;
+  background: var(--primary-color);
+  color: white;
+  padding: 1rem;
+}
+.logo {
+  height: 40px;
+  margin-right: 1rem;
+}
+.container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+#authButtons button {
+  background: var(--accent-color);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#authButtons button:hover {
+  opacity: 0.9;
+}
+.hidden {
+  display: none;
+}
+#editorContainer {
+  margin-bottom: 2rem;
+}
+#saveMd {
+  margin-top: 0.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#saveMd:hover {
+  opacity: 0.9;
+}
+#content {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+}

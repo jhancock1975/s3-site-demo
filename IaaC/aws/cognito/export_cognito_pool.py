@@ -12,9 +12,7 @@ def export_user_pool(client, user_pool_id):
 def export_identity_providers(client, user_pool_id):
     """List & fetch full config for each IdP in the pool."""
     providers = []
-    # list the short summaries
-    pages = client.get_paginator('list_identity_providers')\
-                  .paginate(UserPoolId=user_pool_id)
+    pages = client.get_paginator('list_identity_providers').paginate(UserPoolId=user_pool_id)
     for page in pages:
         for p in page.get('Providers', []):
             name = p['ProviderName']
@@ -22,12 +20,23 @@ def export_identity_providers(client, user_pool_id):
                 UserPoolId=user_pool_id,
                 ProviderName=name
             )['IdentityProvider']
+            # hide sensitive secret
+            if 'ProviderDetails' in detail and 'client_secret' in detail['ProviderDetails']:
+                detail['ProviderDetails']['client_secret'] = None
             providers.append(detail)
     return providers
 
+def export_user_groups(client, user_pool_id):
+    """List all groups defined in the User Pool."""
+    groups = []
+    pages = client.get_paginator('list_groups').paginate(UserPoolId=user_pool_id)
+    for page in pages:
+        groups.extend(page.get('Groups', []))
+    return groups
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Export AWS Cognito User Pool and its Identity Providers'
+        description='Export AWS Cognito User Pool, Identity Providers, and Groups'
     )
     parser.add_argument(
         '--user-pool-id', '-p', required=True,
@@ -52,6 +61,7 @@ def main():
     try:
         pool_cfg = export_user_pool(client, args.user_pool_id)
         idps = export_identity_providers(client, args.user_pool_id)
+        groups = export_user_groups(client, args.user_pool_id)
     except client.exceptions.ResourceNotFoundException:
         print(f"Error: User Pool {args.user_pool_id} not found.", file=sys.stderr)
         sys.exit(1)
@@ -61,10 +71,11 @@ def main():
 
     out = {
         'UserPool': pool_cfg,
-        'IdentityProviders': idps
+        'IdentityProviders': idps,
+        'Groups': groups
     }
-    # remove sensitive data
-    out['IdentityProviders'][0]['ProviderDetails']['client_secret'] = None
+
+    # write to file
     with open(args.output, 'w') as f:
         json.dump(out, f, default=str, indent=2)
 
