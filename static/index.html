@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Taptupo.com 1153</title>
+  <title>Taptupo.com</title>
   <link rel="icon" href="assets/favicon.ico"/>
+  <!-- Primary site styling -->
   <link rel="stylesheet" href="css/style.css"/>
-  <link rel="stylesheet" href="css/easymde.bundle.css"/>
 </head>
 <body>
   <header class="site-header">
@@ -18,15 +18,13 @@
   <main id="adminUI" class="hidden">
     <section class="editor" style="width: 80%; margin: 20px auto;">
       <textarea id="markdownEditor" rows="30" cols="120"></textarea>
-      <div class="editor-buttons">
+      <div class="editor-buttons" style="text-align: center; margin-top: 10px;">
         <button id="executePostBtn" class="btn">Execute</button>
       </div>
     </section>
   </main>
 
-  <script src="js/easymde.bundle.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/editor.js"></script>
+  <!-- Simple logout/login toggle -->
   <script>
     document.getElementById('logoutBtn').addEventListener('click', function() {
       this.textContent = 'Login';
