@@ -2,36 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Taptupo.com</title>
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+  <link rel="icon" href="assets/favicon.ico"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/easymde.bundle.css"/>
 </head>
 <body>
   <header class="site-header">
-    <img src="assets/logo.png" alt="Taptupo logo" class="logo" />
+    <img src="assets/logo.png" class="logo" alt="Taptupo"/>
     <h1>Taptupo.com</h1>
+    <button id="logoutBtn" class="btn-logout hidden">Log Out</button>
   </header>
 
-  <main class="container">
-    <section id="authButtons">
-      <button id="loginBtn">Log In</button>
-      <button id="logoutBtn">Log Out</button>
-    </section>
+  <main class="admin-grid hidden" id="adminUI">
+    <!-- Left sidebar: post list + “New Post” button -->
+    <aside class="sidebar">
+      <button id="newPostBtn" class="btn">+ New Post</button>
+      <ul id="postList"></ul>
+    </aside>
 
-    <section id="editorContainer" class="hidden">
+    <!-- Center: markdown editor -->
+    <section class="editor">
       <textarea id="markdownEditor"></textarea>
-      <button id="saveMd">Save</button>
+      <div class="editor-buttons">
+        <button id="previewPostBtn" class="btn">Preview</button>
+        <button id="savePostBtn"    class="btn">Save</button>
+      </div>
     </section>
 
-    <section id="content">
-      <pre id="output">Welcome to Taptupo!</pre>
-    </section>
+    <!-- Right: extra controls -->
+    <aside class="controls">
+      <button id="viewNormalBtn" class="btn">View as normal user</button>
+      <pre id="previewPane" class="hidden"></pre>
+    </aside>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-  <script src="js/login.js"></script>
+  <script src="js/easymde.bundle.js"></script>
   <script src="js/main.js"></script>
   <script src="js/editor.js"></script>
 </body>
