@@ -12,24 +12,17 @@
   <header class="site-header">
     <img src="assets/logo.png" class="logo" alt="Taptupo"/>
     <h1>Taptupo.com</h1>
-    <button id="logoutBtn" class="btn-logout hidden">Log Out</button>
+    <button id="logoutBtn" class="btn-logout">Log Out</button>
   </header>
 
-  <main id="adminUI" class="hidden">
-    <section class="editor" style="width: 80%; margin: 20px auto;">
-      <textarea id="markdownEditor" rows="30" cols="120"></textarea>
-      <div class="editor-buttons" style="text-align: center; margin-top: 10px;">
-        <button id="executePostBtn" class="btn">Execute</button>
-      </div>
-    </section>
+  <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh;">
+    <textarea id="codeEditor" style="width: 80%; height: 60%; font-family: monospace; font-size: 1rem; padding: 10px; box-sizing: border-box;" placeholder="Enter JavaScript code here..."></textarea>
+    <div style="margin-top: 20px; text-align: center;">
+      <button id="executeBtn" class="btn" style="padding: 10px 20px; font-size: 1rem;">Execute</button>
+    </div>
   </main>
 
-  <!-- Simple logout/login toggle -->
-  <script>
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-      this.textContent = 'Login';
-      this.id = 'loginBtn';
-    });
-  </script>
+  <!-- External script -->
+  <script src="js/main.js"></script>
 </body>
 </html>

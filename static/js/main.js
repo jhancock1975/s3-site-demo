@@ -17,19 +17,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.reload();
   };
 
-  // load existing posts
-  const postList = document.getElementById('postList');
-  const posts = await fetch('/api/posts').then(r => r.json());
-  posts.forEach(p => {
-    let li = document.createElement('li');
-    li.textContent = p.title;
-    li.onclick = () => loadPost(p);
-    postList.appendChild(li);
-  });
+// Toggle logout/login
+const logoutBtn = document.getElementById('logoutBtn');
+logoutBtn.addEventListener('click', () => {
+  if (logoutBtn.id === 'logoutBtn') {
+    logoutBtn.textContent = 'Login';
+    logoutBtn.id = 'loginBtn';
+  } else {
+    logoutBtn.textContent = 'Log Out';
+    logoutBtn.id = 'logoutBtn';
+  }
+});
 
-  // new post
-  document.getElementById('newPostBtn').onclick = () => {
-    currentPost = { id: null, title: 'Untitled', body: '' };
-    easyMDE.value('');
-  };
+// Execute JS code from textarea
+const executeBtn = document.getElementById('executeBtn');
+executeBtn.addEventListener('click', () => {
+  const code = document.getElementById('codeEditor').value;
+  try {
+    new Function(code)();
+  } catch (err) {
+    console.error(err);
+    alert('Error: ' + err.message);
+  }
 });
