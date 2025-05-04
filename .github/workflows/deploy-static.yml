@@ -37,7 +37,7 @@ jobs:
       - name: Sync & upload only those files
         run: |
           while read FILE; do
-            aws s3 cp "$FILE" "s3://taptupo.com/${FILE#static/}" --acl public-read
+            aws s3 cp "$FILE" "s3://taptupo.com/${FILE#static/}" 
           done < changed.txt
 
       - name: Invalidate only those files
