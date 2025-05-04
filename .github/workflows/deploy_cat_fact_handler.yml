@@ -22,8 +22,20 @@ jobs:
       - name: Build & package cat-facts Lambda
         run: |
           cd lambda/cat_fact_handler
+
+          # Initialize a temporary module so we can pull in aws-lambda-go
+          go mod init cat_fact_handler
+
+          # Pull in dependencies (events & lambda)
+          go get github.com/aws/aws-lambda-go/events
+          go get github.com/aws/aws-lambda-go/lambda
+          go mod tidy
+
+          # Build the custom runtime executable named 'bootstrap'
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
             go build -o bootstrap cat_fact_handler.go
+
+          # Zip just the bootstrap binary
           zip -j function.zip bootstrap
 
       - name: Configure AWS credentials
