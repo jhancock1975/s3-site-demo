@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Taptupo.com</title>
+  <title>XTaptupo.com</title>
   <link rel="icon" href="assets/favicon.ico"/>
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="stylesheet" href="css/easymde.bundle.css"/>
@@ -15,21 +15,13 @@
     <button id="logoutBtn" class="btn-logout hidden">Log Out</button>
   </header>
 
-  <main class="admin-grid hidden" id="adminUI">
-
-    <!-- Center: markdown editor -->
-    <section class="editor">
-      <textarea id="markdownEditor" rows="20" cols="100"></textarea>
+  <main id="adminUI" class="hidden">
+    <section class="editor" style="width: 80%; margin: 20px auto;">
+      <textarea id="markdownEditor" rows="30" cols="120"></textarea>
       <div class="editor-buttons">
         <button id="executePostBtn" class="btn">Execute</button>
       </div>
     </section>
-
-    <!-- Right: extra controls -->
-    <aside class="controls">
-      <button id="viewNormalBtn" class="btn">View as normal user</button>
-      <pre id="previewPane" class="hidden"></pre>
-    </aside>
   </main>
 
   <script src="js/easymde.bundle.js"></script>
