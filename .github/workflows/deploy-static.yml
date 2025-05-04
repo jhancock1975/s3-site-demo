@@ -31,7 +31,7 @@ jobs:
       - name: Find changed static files
         run: |
           git fetch origin main
-          CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'static/**')
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- static/ > all.txt
           # filter out any empties and write back only real paths
           grep -v '^$' all.txt > changed.txt || true
 
