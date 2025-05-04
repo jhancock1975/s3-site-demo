@@ -28,30 +28,28 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Sync static assets to S3 (prune & detect changes)
+      - name: Find changed static files
         run: |
-          echo "→ Syncing static/ → s3://taptupo.com/ (with deletions)…"
-          CHANGES=$(aws s3 sync static/ s3://taptupo.com/ --delete \
-                    | grep -E '^(upload|delete):' \
-                    | awk '{print $2}')
-          
-          if [ -n "$CHANGES" ]; then
-            echo "→ Detected changes:"
-            echo "$CHANGES"
-            
-            # Build an array of "/path/to/object" entries for invalidation
-            PATHS=()
-            for FILE in $CHANGES; do
-              PATHS+=( "/${FILE}" )
-            done
+          git fetch origin main
+          CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'static/**')
+          echo "$CHANGES" > changed.txt
 
-            echo "→ Invalidating those paths on CloudFront…"
-            aws cloudfront create-invalidation \
-              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-              --paths "${PATHS[@]}"
-          else
-            echo "→ No changed or deleted files; skipping CloudFront invalidation."
-          fi
+      - name: Sync & upload only those files
+        run: |
+          while read FILE; do
+            aws s3 cp "$FILE" "s3://taptupo.com/${FILE#static/}" --acl public-read
+          done < changed.txt
+
+      - name: Invalidate only those files
+        run: |
+          PATHS=()
+          while read FILE; do
+            PATHS+=( "/${FILE#static/}" )
+          done < changed.txt
+
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "${PATHS[@]}"
 
       - name: Done
         run: echo "Static deploy complete."
