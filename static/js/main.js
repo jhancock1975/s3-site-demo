@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!groups.includes('Admins')) return;  // no admin rights
 
   // show the admin UI
-  document.getElementById('adminUI').classList.remove('hidden');
   document.getElementById('logoutBtn').classList.remove('hidden');
 
   // wire up logout
