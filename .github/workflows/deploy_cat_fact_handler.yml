@@ -1,0 +1,40 @@
+# .github/workflows/deploy-cat-facts-lambda.yml
+name: Build & Deploy cat-facts-lambda
+
+on:
+  push:
+    paths:
+      - 'lambda/cat_fact_handler/**'
+
+jobs:
+  deploy-cat-facts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Build & package cat-facts Lambda
+        run: |
+          cd lambda/cat_fact_handler
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+            go build -o bootstrap cat_fact_handler.go
+          zip -j function.zip bootstrap
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name cat-facts-lambda \
+            --zip-file fileb://lambda/cat_fact_handler/function.zip
