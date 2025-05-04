@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - 'lambda/cat_fact_handler/**'
+  workflow_dispatch:
+
 
 jobs:
   deploy-cat-facts:
