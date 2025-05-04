@@ -32,7 +32,8 @@ jobs:
         run: |
           git fetch origin main
           CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'static/**')
-          echo "$CHANGES" > changed.txt
+          # filter out any empties and write back only real paths
+          grep -v '^$' all.txt > changed.txt || true
 
       - name: Sync & upload only those files
         run: |
