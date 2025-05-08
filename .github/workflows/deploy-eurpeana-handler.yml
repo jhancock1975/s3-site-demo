@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'lambda/europeana_handler/**'
+  workflow_dispatch:
 
 jobs:
   deploy-europeana-handler:
