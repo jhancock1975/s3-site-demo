@@ -18,16 +18,15 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          # Use a Go version matching your go.mod directive
-          go-version: '1.20'
+          go-version: '1.22'
 
-      - name: Fix go.mod version directive
+      - name: Normalize go.mod version
         run: |
           cd lambda/europeana_handler
-          # Ensure the go.mod 'go' line is valid (major.minor only)
-          go mod edit -go=1.20
+          # Replace any 3-part go directive like "go 1.22.2" with "go 1.22"
+          sed -i 's/^go [0-9]\+\.[0-9]\+\.[0-9]\+$/go 1.22/' go.mod
 
-      - name: Build Lambda bootstrap binary
+      - name: Build Lambda bootstrap
         run: |
           cd lambda/europeana_handler
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
