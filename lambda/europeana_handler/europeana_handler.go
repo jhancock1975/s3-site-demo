@@ -3,9 +3,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -19,16 +21,14 @@ var (
 )
 
 func init() {
-	// load AWS SDK config (region from env or default)
+	// load AWS SDK config
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		panic(fmt.Errorf("loading AWS config: %w", err))
 	}
 
-	// Create SSM client
+	// fetch API key from SSM
 	ssmClient := ssm.NewFromConfig(cfg)
-
-	// Get the SecureString parameter
 	resp, err := ssmClient.GetParameter(context.Background(), &ssm.GetParameterInput{
 		Name:           awsString("/taptupo/europeana/api-key"),
 		WithDecryption: awsBool(true),
@@ -39,27 +39,36 @@ func init() {
 	europeanaKey = *resp.Parameter.Value
 }
 
-// handler invokes Europeana and proxies the JSON response
-func handler(ctx context.Context, _ events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET",
-		"https://api.europeana.eu/record/v2/search.json?query=Vermeer", nil)
-	if err != nil {
-		return errorResp(500, err)
+func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	// read and validate the 'query' parameter
+	term, ok := req.QueryStringParameters["query"]
+	if !ok || term == "" {
+		return clientError(400, "missing required query parameter 'query'")
 	}
-	req.Header.Set("X-Api-Key", europeanaKey)
 
-	res, err := httpClient.Do(req)
+	// build the Europeana API URL
+	u := fmt.Sprintf(
+		"https://api.europeana.eu/record/v2/search.json?query=%s",
+		url.QueryEscape(term),
+	)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
-		return errorResp(502, err)
+		return serverError(err)
+	}
+	httpReq.Header.Set("X-Api-Key", europeanaKey)
+
+	// call Europeana
+	res, err := httpClient.Do(httpReq)
+	if err != nil {
+		return serverError(err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errorResp(500, err)
+		return serverError(err)
 	}
 
-	// return upstream JSON
 	return events.APIGatewayProxyResponse{
 		StatusCode:      res.StatusCode,
 		Headers:         map[string]string{"Content-Type": "application/json"},
@@ -68,10 +77,20 @@ func handler(ctx context.Context, _ events.APIGatewayProxyRequest) (events.APIGa
 	}, nil
 }
 
-func errorResp(code int, err error) (events.APIGatewayProxyResponse, error) {
-	msg := fmt.Sprintf(`{"error": %q}`, err.Error())
+func clientError(code int, message string) (events.APIGatewayProxyResponse, error) {
+	body, _ := json.Marshal(map[string]string{"error": message})
 	return events.APIGatewayProxyResponse{
 		StatusCode:      code,
+		Headers:         map[string]string{"Content-Type": "application/json"},
+		Body:            string(body),
+		IsBase64Encoded: false,
+	}, nil
+}
+
+func serverError(err error) (events.APIGatewayProxyResponse, error) {
+	msg := fmt.Sprintf(`{"error":"%s"}`, err.Error())
+	return events.APIGatewayProxyResponse{
+		StatusCode:      502,
 		Headers:         map[string]string{"Content-Type": "application/json"},
 		Body:            msg,
 		IsBase64Encoded: false,
@@ -79,8 +98,7 @@ func errorResp(code int, err error) (events.APIGatewayProxyResponse, error) {
 }
 
 func awsString(s string) *string { return &s }
-
-func awsBool(b bool) *bool { return &b }
+func awsBool(b bool) *bool       { return &b }
 
 func main() {
 	lambda.Start(handler)
