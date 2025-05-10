@@ -43,7 +43,7 @@ vscode-debug.log*
 *.gz
 *.zip
 
-bootstrp
+bootstrap
 main
 
 *.sum
