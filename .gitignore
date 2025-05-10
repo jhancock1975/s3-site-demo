@@ -42,3 +42,9 @@ vscode-debug.log*
 # compressed archives
 *.gz
 *.zip
+
+bootstrp
+main
+
+*.sum
+*.mod
