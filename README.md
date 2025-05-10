@@ -1,3 +1,6 @@
+# 2025-05-10
+use the script scripts/create-lambda.sh for creating new lambdas to call
+
 # Terraform + GitHub Actions Repository
 
 This repository provisions an AWS S3 static website, AWS Lambda function (Go), API Gateway, and Cloudflare DNS record using Terraform. It also includes a GitHub Actions workflow to build and deploy.
