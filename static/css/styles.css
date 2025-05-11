@@ -13,3 +13,8 @@
   background-color: var(--bs-primary-dark);
   border-color: var(--bs-primary-dark);
 }
+
+/* Don’t let the editor use full-height; size it via rows instead */
+#code-editor.full-height {
+  height: auto !important;
+}
