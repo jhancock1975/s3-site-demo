@@ -38,8 +38,12 @@ jobs:
       - name: Sync & upload only those files
         run: |
           while read FILE; do
-            aws s3 cp "$FILE" "s3://taptupo.com/${FILE#static/}" 
-          done < changed.txt
+            if [ -f "$FILE" ]; then
+              aws s3 cp "$FILE" "s3://taptupo.com/${FILE#static/}"
+            else
+              echo "File $FILE does not exist. Skipping..."
+            fi
+          done < changed.txt      
 
       - name: Invalidate only those files
         run: |
