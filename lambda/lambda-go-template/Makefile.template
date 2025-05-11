@@ -1,0 +1,28 @@
+# Makefile.template
+
+BUILD_DIR := build
+BIN_NAME   := bootstrap
+ZIP_NAME   := ${MODULE_NAME}.zip
+
+MODULE_NAME ?= template-placeholder   # <<-- overwritten by envsubst
+
+GOOS   := linux
+GOARCH := amd64
+
+SRC := $(wildcard *.go)
+
+.PHONY: all compile package clean
+
+all: $(BUILD_DIR)/$(BIN_NAME)
+
+$(BUILD_DIR)/$(BIN_NAME): $(SRC)
+	@go mod init $(MODULE_NAME)
+	go mod tidy
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ $(SRC)
+
+package: compile
+	zip -j $(BUILD_DIR)/$(ZIP_NAME) $(BUILD_DIR)/$(BIN_NAME)
+
+clean:
+	rm -rf $(BUILD_DIR) go.mod go.sum
+
