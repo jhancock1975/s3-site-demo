@@ -52,9 +52,13 @@ jobs:
             PATHS+=( "/${FILE#static/}" )
           done < changed.txt
 
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "${PATHS[@]}"
+          if [ ${#PATHS[@]} -eq 0 ]; then
+            echo "No files to invalidate. Skipping CloudFront invalidation."
+          else
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "${PATHS[@]}"
+          fi
 
       - name: Done
         run: echo "Static deploy complete."
