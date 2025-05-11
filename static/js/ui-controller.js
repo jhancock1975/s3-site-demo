@@ -9,6 +9,7 @@ document.getElementById('execute-btn').addEventListener('click', () => {
     // Example: execute as JavaScript for text output
     const result = eval(code);
     document.getElementById('output-text').textContent = String(result);
+    testFunc();
   } catch (err) {
     document.getElementById('output-text').textContent = err;
   }
@@ -21,3 +22,8 @@ document.getElementById('execute-btn').addEventListener('click', () => {
   // const ctx = canvas.getContext('2d');
   // /* run user graphics code with ctx */
 });
+
+function testFunc(){
+  console.log("testFunc");
+  return "testFunc";
+}
