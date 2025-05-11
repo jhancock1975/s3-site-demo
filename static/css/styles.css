@@ -1,17 +1,15 @@
-/* Ensure the code editor and panels fill the viewport height */
-.full-height {
-  height: calc(100vh - 56px - 2rem); /* navbar (56px) + some margin */
+/* 1) Banner = textarea border color */
+.bg-custom {
+  background-color: #ced4da !important;
 }
-textarea {
-  resize: none;
+
+/* 2) Ensure the brand text still shows up dark-on-light */
+.navbar-light .navbar-brand {
+  color: #000;
 }
-#code-editor {
-  font-family: monospace;
-}
-#output-text, #render-canvas {
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
-  background-color: #fff;
-  padding: 1rem;
-  overflow: auto;
+
+/* 3) (Optional) If you want the logout hover to match exactly */
+#logout-btn:hover {
+  background-color: var(--bs-primary-dark);
+  border-color: var(--bs-primary-dark);
 }
