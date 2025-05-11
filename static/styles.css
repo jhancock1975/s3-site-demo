@@ -1,17 +1,17 @@
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  color: #333;
-  text-align: center;
-  margin: 0;
-  padding: 2em;
+/* Ensure the code editor and panels fill the viewport height */
+.full-height {
+  height: calc(100vh - 56px - 2rem); /* navbar (56px) + some margin */
 }
-
-.container {
-  max-width: 600px;
-  margin: 10% auto;
-  padding: 2em;
+textarea {
+  resize: none;
+}
+#code-editor {
+  font-family: monospace;
+}
+#output-text, #render-canvas {
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
   background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  overflow: auto;
 }
