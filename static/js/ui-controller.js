@@ -1,5 +1,6 @@
+const gpt4o = "gpt4o";
 document.getElementById('execute-btn').addEventListener('click', () => {
-  const code = document.getElementById('code-editor').value;
+  
   // Clear previous outputs
   document.getElementById('output-text').textContent = '';
   const canvasDiv = document.getElementById('render-canvas');
@@ -7,23 +8,39 @@ document.getElementById('execute-btn').addEventListener('click', () => {
 
   try {
     // Example: execute as JavaScript for text output
-    const result = eval(code);
-    document.getElementById('output-text').textContent = String(result);
-    testFunc();
+    const result = transduce(gpt4o);
   } catch (err) {
     document.getElementById('output-text').textContent = err;
   }
-
-  // If your code draws on a canvas, you could do:
-  // const canvas = document.createElement('canvas');
-  // canvas.width = canvasDiv.clientWidth;
-  // canvas.height = canvasDiv.clientHeight;
-  // canvasDiv.appendChild(canvas);
-  // const ctx = canvas.getContext('2d');
-  // /* run user graphics code with ctx */
 });
 
-function testFunc(){
-  console.log("testFunc");
-  return "testFunc";
+function transduce(command){
+  console.log("in transduce");
+  if (command === "gpt4o") {
+    console.log("in gpt4o");
+    queryGpt4o();
+  } else{
+    console.log("unknown transduce command");
+  }
+}
+
+async function queryGpt4o() {
+  console.log("in queryGpt4o");
+  const promptText = document.getElementById('code-editor').value;
+  try {
+    const res = await fetch('https://api.taptupo.com/gpt-4o/gpt-4o', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: promptText })
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    const data = await res.json();
+    document.getElementById('output-text').textContent = String(data.choices[0].message.content);
+    return data;
+  } catch (err) {
+    console.error('Error calling GPT-4o:', err);
+    throw err;
+  }
 }
