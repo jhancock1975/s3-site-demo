@@ -3,11 +3,9 @@ document.getElementById('execute-btn').addEventListener('click', () => {
   
   // Clear previous outputs
   document.getElementById('output-text').textContent = '';
-  const canvasDiv = document.getElementById('render-canvas');
-  canvasDiv.innerHTML = '';
-
+  document.getElementById('render-canvas').innerHTML = '';
   try {
-    // Example: execute as JavaScript for text output
+    //call transducer with gpt4o message
     const result = transduce(gpt4o);
   } catch (err) {
     document.getElementById('output-text').textContent = err;
