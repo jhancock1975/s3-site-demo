@@ -43,8 +43,61 @@ vscode-debug.log*
 *.gz
 *.zip
 
+# ─── Python ────────────────────────────────────────────────────────────────────
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
+pythonenv*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Environments
+*.env
+
+# pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# pyenv
+.python-version
+
+# Pyre type checker
+.pyre/
+
+# ─── Go ─────────────────────────────────────────────────────────────────
 bootstrap
 main
 
 *.sum
 *.mod
+
