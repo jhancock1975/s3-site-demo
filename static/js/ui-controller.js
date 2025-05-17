@@ -65,7 +65,7 @@ async function queryGpt4o() {
     const res = await fetch('https://api.taptupo.com/gpt-4o/gpt-4o', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('idToken')}`
+      'Authorization': `Bearer ${localStorage.getItem('id_token')}`
       },
       body: JSON.stringify({ prompt: promptText })
     });
