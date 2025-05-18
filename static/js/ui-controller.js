@@ -6,7 +6,6 @@ const access_token = "access_token";
 document.getElementById('execute-btn').addEventListener('click', () => {
   
   try {
-    //call transducer with gpt4o message
     const result = transduce(gpt4o);
   } catch (err) {
     document.getElementById('output-text').textContent = err;
