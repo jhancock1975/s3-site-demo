@@ -44,21 +44,17 @@ jobs:
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
           git fetch --no-tags origin main
 
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
-            | sed 's|^lambda/||;s|\.go$||' \
-            | cut -d'/' -f1 \
-            | sort -u \
-            | tr '\n' ' ')
-          echo "functions=$CHANGED" >> $GITHUB_ENV
-          echo "Changed functions: $CHANGED"
+          functions=$(git diff --name-only origin/main $GITHUB_SHA |
+            grep '^lambda/' |
+            cut -f2 -d/ |
+            uniq)
 
-      - name: Build, zip & deploy changed functions
-        if: env.functions != ''
+          echo "Functions to deploy: $functions"
+          echo "::set-output name=functions::$functions"
+
+      - name: Deploy functions
         run: |
-          set -euo pipefail
-          trap 'echo "❌ Error on line $LINENO"; exit 1' ERR
-
-          for fn in $functions; do
+          for fn in ${{ steps.find_functions.outputs.functions }}; do
             echo "=== Deploying lambda/$fn ==="
             pushd "lambda/$fn"
 
@@ -74,8 +70,9 @@ jobs:
               go mod tidy
             fi
 
-            echo "→ Building $fn (linux/amd64)"
-            GOOS=linux GOARCH=amd64 go build -mod=readonly -o bootstrap *.go
+            echo "→ Building $fn (linux/amd64, static)"
+            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+              go build -mod=readonly -ldflags="-s -w" -o bootstrap *.go
 
             echo "→ Zipping $fn"
             zip -q "${fn}.zip" bootstrap
