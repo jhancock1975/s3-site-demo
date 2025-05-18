@@ -20,6 +20,12 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Enforce static, linux/amd64 build everywhere in this job
+    env:
+      GOOS: linux
+      GOARCH: amd64
+      CGO_ENABLED: "0"
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -41,14 +47,11 @@ jobs:
       - name: Find changed Go lambda functions
         id: find_functions
         run: |
-          echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
           git fetch --no-tags origin main
-
-          functions=$(git diff --name-only origin/main $GITHUB_SHA |
-            grep '^lambda/' |
-            cut -f2 -d/ |
-            uniq)
-
+          functions=$(git diff --name-only origin/main $GITHUB_SHA \
+            | grep '^lambda/' \
+            | cut -f2 -d/ \
+            | uniq)
           echo "Functions to deploy: $functions"
           echo "::set-output name=functions::$functions"
 
@@ -58,27 +61,34 @@ jobs:
             echo "=== Deploying lambda/$fn ==="
             pushd "lambda/$fn"
 
+            # Modules
             if [ -f go.mod ]; then
-              echo "→ go.mod found; running tidy & download"
-              export GO111MODULE=on
               go mod tidy
               go mod download
             else
-              echo "→ No go.mod: initializing module & running tidy"
-              export GO111MODULE=on
               go mod init "$fn"
               go mod tidy
             fi
 
-            echo "→ Building $fn (linux/amd64, static)"
-            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-              go build -mod=readonly -ldflags="-s -w" -o bootstrap *.go
+            # Build statically
+            echo "→ Building static bootstrap"
+            go build -mod=readonly -ldflags="-s -w" -o bootstrap *.go
 
-            echo "→ Zipping $fn"
+            # Verify static linking
+            echo "→ Verifying bootstrap is static"
+            file bootstrap
+            if ldd bootstrap 2>&1 | grep -q 'not a dynamic executable'; then
+              echo "✅ bootstrap is fully static"
+            else
+              echo "❌ ERROR: bootstrap is dynamically linked!" >&2
+              ldd bootstrap
+              exit 1
+            fi
+
+            # Package & publish
             zip -q "${fn}.zip" bootstrap
-
-            echo "→ Publishing $fn to Lambda"
             ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role"
+
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
