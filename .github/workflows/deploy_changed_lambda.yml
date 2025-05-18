@@ -64,10 +64,10 @@ jobs:
             # Ensure Go modules mode is on and download all dependencies
             export GO111MODULE=on
             echo "→ Downloading Go modules for $fn"
-            go mod download
+            go mod download ./...
 
             # Build the Go binary
-            GOOS=linux GOARCH=amd64 go build -o bootstrap *.go
+            GOOS=linux GOARCH=amd64 go build -mod=readonly -o bootstrap *.go
 
             # Zip the binary
             zip -q "${fn}.zip" bootstrap
