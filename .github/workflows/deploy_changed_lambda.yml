@@ -2,9 +2,7 @@ name: Deploy Changed Go Lambda Functions
 
 on:
   push:
-    branches:
-      - main
-    # Only run when something under lambda/ changes
+    branches: [ main ]
     paths:
       - 'lambda/**'
   pull_request:
@@ -43,8 +41,11 @@ jobs:
         id: find_functions
         run: |
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
+          # 1) list all changed .go files under lambda/
+          # 2) strip 'lambda/' prefix, then take only the first path element (dir name)
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
-            | sed 's|lambda/||;s|\.go||' \
+            | sed 's|^lambda/||' \
+            | cut -d'/' -f1 \
             | sort -u \
             | tr '\n' ' ')
           echo "functions=$CHANGED" >> $GITHUB_ENV
@@ -60,13 +61,13 @@ jobs:
             echo "=== Deploying lambda/$fn ==="
             pushd "lambda/$fn"
 
-            # Build binary
+            # Build the Go binary
             GOOS=linux GOARCH=amd64 go build -o bootstrap *.go
 
-            # Zip it
+            # Zip the binary
             zip -q "${fn}.zip" bootstrap
 
-            # Create or update Lambda
+            # Create or update the Lambda function
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
