@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - main
+    # Only run when something under lambda/ changes
     paths:
       - 'lambda/**'
-  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'lambda/**'
 
 permissions:
-  contents: read  # needed for checkout
+  contents: read
 
 env:
   AWS_REGION: us-east-1
@@ -19,7 +22,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -39,11 +42,8 @@ jobs:
       - name: Find changed Go lambda functions
         id: find_functions
         run: |
-          # Fetch main so we can diff against it
-          git fetch --no-tags origin main
-
-          # Compare main..HEAD (two dots!) across all subdirs
-          CHANGED=$(git diff --name-only origin/main..HEAD -- 'lambda/**/*.go' \
+          echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
             | sed 's|lambda/||;s|\.go||' \
             | sort -u \
             | tr '\n' ' ')
@@ -54,23 +54,23 @@ jobs:
         if: env.functions != ''
         run: |
           set -euo pipefail
-          trap 'echo "Error on line $LINENO"; exit 1' ERR
+          trap 'echo "❌ Error on line $LINENO"; exit 1' ERR
 
           for fn in $functions; do
-            echo "=== Deploying function: $fn ==="
+            echo "=== Deploying lambda/$fn ==="
             pushd "lambda/$fn"
 
-            # Build the Go binary (works if your .go file is named *.go)
+            # Build binary
             GOOS=linux GOARCH=amd64 go build -o bootstrap *.go
 
-            # Zip the binary
+            # Zip it
             zip -q "${fn}.zip" bootstrap
 
-            # Create or update the Lambda function
+            # Create or update Lambda
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
-                --runtime provided.al2023 \
+                --runtime provided.al2 \
                 --role arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role \
                 --handler bootstrap \
                 --zip-file fileb://"${fn}.zip"

@@ -122,6 +122,6 @@ func serverError(err error) (events.APIGatewayProxyResponse, error) {
 }
 
 func main() {
-	fmt.Printf("Starting Lambda function............\n")
+	fmt.Printf("Starting Lambda function.............\n")
 	lambda.Start(handler)
 }
