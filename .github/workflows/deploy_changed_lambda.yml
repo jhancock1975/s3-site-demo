@@ -4,38 +4,45 @@ on:
   push:
     branches:
       - main
-    # Trigger only when files under lambda/ change
     paths:
       - 'lambda/**'
   workflow_dispatch:
 
 permissions:
-  contents: read  # required for checkout
+  contents: read  # needed for checkout
+
+env:
+  AWS_REGION: us-east-1
+  ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
 
-      - name: Fetch AWS Account ID
-        id: fetch-account
+      - name: Find changed Go lambda functions
+        id: find_functions
         run: |
-          echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+          # Fetch main so we can diff against it
+          git fetch --no-tags origin main
 
-      - name: Detect changed lambdas
-        id: detect
-        run: |
-          # Compare against main to find all .go files changed under lambda/
-          git fetch --no-tags --depth=2 origin main
+          # Compare main..HEAD (two dots!) across all subdirs
           CHANGED=$(git diff --name-only origin/main..HEAD -- 'lambda/**/*.go' \
             | sed 's|lambda/||;s|\.go||' \
             | sort -u \
@@ -43,32 +50,35 @@ jobs:
           echo "functions=$CHANGED" >> $GITHUB_ENV
           echo "Changed functions: $CHANGED"
 
-      - name: Build, zip, and deploy changed lambdas
-        if: ${{ env.functions != '' }}
+      - name: Deploy changed functions
+        if: env.functions != ''
         run: |
+          set -euo pipefail
+          trap 'echo "Error on line $LINENO"; exit 1' ERR
+
           for fn in $functions; do
-            echo "\n=== Deploying Lambda: $fn ==="
-            cd lambda
+            echo "=== Deploying function: $fn ==="
+            pushd "lambda/$fn"
 
-            # Download deps and build
-            go mod download
-            GOOS=linux GOARCH=amd64 go build -o bootstrap ${fn}.go
+            # Build the Go binary (works if your .go file is named *.go)
+            GOOS=linux GOARCH=amd64 go build -o bootstrap *.go
 
-            # Package
-            zip ../${fn}.zip bootstrap
-            cd ..
+            # Zip the binary
+            zip -q "${fn}.zip" bootstrap
 
-            # Create if missing, else update
-            if ! aws lambda get-function --function-name $fn >/dev/null 2>&1; then
+            # Create or update the Lambda function
+            if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
-                --function-name $fn \
+                --function-name "$fn" \
                 --runtime provided.al2023 \
                 --role arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role \
                 --handler bootstrap \
-                --zip-file fileb://./${fn}.zip
+                --zip-file fileb://"${fn}.zip"
             else
               aws lambda update-function-code \
-                --function-name $fn \
-                --zip-file fileb://./${fn}.zip
+                --function-name "$fn" \
+                --zip-file fileb://"${fn}.zip"
             fi
+
+            popd
           done
