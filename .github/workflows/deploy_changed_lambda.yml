@@ -15,7 +15,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
+  ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
   deploy:
@@ -29,7 +29,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.21'              # ← Now using Go 1.21!
+          go-version: '1.21'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -44,7 +44,6 @@ jobs:
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
           git fetch --no-tags origin main
 
-          # Diff only .go files under lambda/, strip path & extension, extract top-level dir
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
             | sed 's|^lambda/||;s|\.go$||' \
             | cut -d'/' -f1 \
@@ -82,11 +81,12 @@ jobs:
             zip -q "${fn}.zip" bootstrap
 
             echo "→ Publishing $fn to Lambda"
+            ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role"
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
                 --runtime provided.al2 \
-                --role arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role \
+                --role "$ROLE_ARN" \
                 --handler bootstrap \
                 --zip-file fileb://"${fn}.zip"
             else
