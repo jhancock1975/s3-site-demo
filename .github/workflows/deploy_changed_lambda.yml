@@ -29,7 +29,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.20'
+          go-version: '1.21'              # ← Now using Go 1.21!
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -42,7 +42,9 @@ jobs:
         id: find_functions
         run: |
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
-          # Diff just the .go files and grab their parent folder names
+          git fetch --no-tags origin main
+
+          # Diff only .go files under lambda/, strip path & extension, extract top-level dir
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
             | sed 's|^lambda/||;s|\.go$||' \
             | cut -d'/' -f1 \
@@ -51,7 +53,7 @@ jobs:
           echo "functions=$CHANGED" >> $GITHUB_ENV
           echo "Changed functions: $CHANGED"
 
-      - name: Build, zip & deploy lambdas
+      - name: Build, zip & deploy changed functions
         if: env.functions != ''
         run: |
           set -euo pipefail
@@ -62,31 +64,24 @@ jobs:
             pushd "lambda/$fn"
 
             if [ -f go.mod ]; then
-              echo "→ go.mod detected; tidying & downloading modules"
+              echo "→ go.mod found; running tidy & download"
               export GO111MODULE=on
               go mod tidy
               go mod download
             else
-              echo "→ No go.mod: initializing module and fetching imports"
+              echo "→ No go.mod: initializing module & running tidy"
               export GO111MODULE=on
               go mod init "$fn"
-              # Grab all non-stdlib imports from your source
-              IMPORTS=$(go list -f '{{ join .Imports "\n" }}' *.go \
-                | grep '\.' \
-                | sort -u)
-              for pkg in $IMPORTS; do
-                echo "   → go get $pkg"
-                go get "$pkg"
-              done
+              go mod tidy
             fi
 
-            echo "→ Building $fn"
+            echo "→ Building $fn (linux/amd64)"
             GOOS=linux GOARCH=amd64 go build -mod=readonly -o bootstrap *.go
 
             echo "→ Zipping $fn"
             zip -q "${fn}.zip" bootstrap
 
-            echo "→ Pushing to Lambda"
+            echo "→ Publishing $fn to Lambda"
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
