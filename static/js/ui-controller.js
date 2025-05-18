@@ -13,7 +13,7 @@ document.getElementById('execute-btn').addEventListener('click', () => {
 });
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
-  transduce(logout);
+  transduce(doLogout);
 });
 
 
@@ -22,9 +22,9 @@ function transduce(command){
   if (command === gpt4o) {
     console.log("transducer:  gpt4o");
     queryGpt4o();
-  } else if (command === logout) {
+  } else if (command === doLogout) {
     console.log("transducer:  logout");
-    logout();
+    doLogout();
   } else{
     console.log("unknown transduce command");
   }
@@ -55,7 +55,7 @@ async function queryGpt4o() {
   }
 }
 
-async function logout(){
+async function doLogout(){
   // 1) Sign out of Google on the client
   if (window.gapi && gapi.auth2) {
     try {
