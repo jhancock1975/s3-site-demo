@@ -44,11 +44,13 @@ jobs:
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
           git fetch --no-tags origin main
 
-          # Extract only the directory name under lambda/
+          # Diff only the .go files under lambda/, strip path & extension, then extract the directory name
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
-            | awk -F/ '{print $2}' \
+            | sed 's|lambda/||;s|\.go||' \
+            | awk -F/ '{print $1}' \
             | sort -u \
             | tr '\n' ' ')
+          
           echo "functions=$CHANGED" >> $GITHUB_ENV
           echo "Changed functions: $CHANGED"
 
@@ -66,7 +68,7 @@ jobs:
             export GO111MODULE=on
             go mod tidy
 
-            echo "→ Downloading modules"
+            echo "→ Downloading all modules"
             go mod download
 
             echo "→ Building $fn"
