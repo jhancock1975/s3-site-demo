@@ -7,6 +7,8 @@ on:
     paths:
       - 'lambda/**'
   pull_request:
+    branches:
+      - main
     paths:
       - 'lambda/**'
 
@@ -20,22 +22,12 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Enforce static, linux/amd64 build everywhere in this job
-    env:
-      GOOS: linux
-      GOARCH: amd64
-      CGO_ENABLED: "0"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.21'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -50,18 +42,17 @@ jobs:
           git fetch --no-tags origin main
           functions=$(git diff --name-only origin/main $GITHUB_SHA \
             | grep '^lambda/' \
-            | cut -f2 -d/ \
+            | cut -d'/' -f2 \
             | uniq)
-          echo "Functions to deploy: $functions"
-          echo "::set-output name=functions::$functions"
+          echo "functions=$functions" >> $GITHUB_OUTPUT
 
-      - name: Deploy functions
+      - name: Build & Deploy Lambdas
         run: |
           for fn in ${{ steps.find_functions.outputs.functions }}; do
-            echo "=== Deploying lambda/$fn ==="
+            echo "=== λ/$fn ==="
             pushd "lambda/$fn"
 
-            # Modules
+            # Ensure modules are pulled
             if [ -f go.mod ]; then
               go mod tidy
               go mod download
@@ -70,22 +61,31 @@ jobs:
               go mod tidy
             fi
 
-            # Build statically
-            echo "→ Building static bootstrap"
-            go build -mod=readonly -ldflags="-s -w" -o bootstrap *.go
+            # 1) Build a static musl-linked binary inside Alpine
+            echo "→ Building bootstrap (musl-static)"
+            docker run --rm \
+              -v "$PWD":/var/task \
+              -w /var/task \
+              golang:1.21-alpine3.18 \
+              sh -euxc '
+                apk add --no-cache musl-dev gcc
+                CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+                  go build -tags netgo \
+                    -ldflags="-s -w -linkmode external -extldflags \"-static\"" \
+                    -o bootstrap *.go
+              '
 
-            # Verify static linking
+            # 2) Double-check it’s really static
             echo "→ Verifying bootstrap is static"
-            file bootstrap
-            if ldd bootstrap 2>&1 | grep -q 'not a dynamic executable'; then
+            if ldd bootstrap 2>&1 | grep -q "not a dynamic executable"; then
               echo "✅ bootstrap is fully static"
             else
-              echo "❌ ERROR: bootstrap is dynamically linked!" >&2
+              echo "❌ ERROR: bootstrap is still dynamically linked!" >&2
               ldd bootstrap
               exit 1
             fi
 
-            # Package & publish
+            # 3) Zip & publish
             zip -q "${fn}.zip" bootstrap
             ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role"
 
@@ -93,7 +93,7 @@ jobs:
               aws lambda create-function \
                 --function-name "$fn" \
                 --runtime provided.al2 \
-                --role "$ROLE_ARN" \
+                --role    "$ROLE_ARN" \
                 --handler bootstrap \
                 --zip-file fileb://"${fn}.zip"
             else
