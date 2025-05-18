@@ -42,15 +42,16 @@ jobs:
         id: find_functions
         run: |
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
+          # Diff just the .go files and grab their parent folder names
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
-            | sed 's|^lambda/||' \
+            | sed 's|^lambda/||;s|\.go$||' \
             | cut -d'/' -f1 \
             | sort -u \
             | tr '\n' ' ')
           echo "functions=$CHANGED" >> $GITHUB_ENV
           echo "Changed functions: $CHANGED"
 
-      - name: Build, zip, and deploy changed functions
+      - name: Build, zip & deploy lambdas
         if: env.functions != ''
         run: |
           set -euo pipefail
@@ -60,15 +61,23 @@ jobs:
             echo "=== Deploying lambda/$fn ==="
             pushd "lambda/$fn"
 
-            # Only run go-mod steps if this function has its own go.mod
             if [ -f go.mod ]; then
+              echo "→ go.mod detected; tidying & downloading modules"
               export GO111MODULE=on
-              echo "→ Tidying module (go.mod & go.sum)"
               go mod tidy
-              echo "→ Downloading Go modules for $fn"
               go mod download
             else
-              echo "→ No go.mod found in lambda/$fn, skipping module download."
+              echo "→ No go.mod: initializing module and fetching imports"
+              export GO111MODULE=on
+              go mod init "$fn"
+              # Grab all non-stdlib imports from your source
+              IMPORTS=$(go list -f '{{ join .Imports "\n" }}' *.go \
+                | grep '\.' \
+                | sort -u)
+              for pkg in $IMPORTS; do
+                echo "   → go get $pkg"
+                go get "$pkg"
+              done
             fi
 
             echo "→ Building $fn"
@@ -77,7 +86,7 @@ jobs:
             echo "→ Zipping $fn"
             zip -q "${fn}.zip" bootstrap
 
-            echo "→ Publishing $fn to Lambda"
+            echo "→ Pushing to Lambda"
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
