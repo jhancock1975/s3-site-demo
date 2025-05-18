@@ -1,4 +1,3 @@
-// lambda/gpt4_handler/gpt4_handler.go
 package main
 
 import (
@@ -25,6 +24,7 @@ func init() {
 	// Load AWS config
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
+		fmt.Printf("Error loading AWS config: %v\n", err)
 		panic(fmt.Errorf("loading AWS config: %w", err))
 	}
 	// Fetch OpenAI key from SSM
@@ -34,9 +34,11 @@ func init() {
 		WithDecryption: aws.Bool(true),
 	})
 	if err != nil {
+		fmt.Printf("Error fetching SSM parameter: %v\n", err)
 		panic(fmt.Errorf("getting SSM parameter: %w", err))
 	}
 	openaiKey = *param.Parameter.Value
+	fmt.Printf("OpenAI key fetched from SSM (length %d)\n", len(openaiKey))
 }
 
 type requestBody struct {
@@ -44,11 +46,15 @@ type requestBody struct {
 }
 
 func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	fmt.Printf("Received request: %+v\n", req)
+
 	// Expect POST with JSON body {"prompt": "..."}
 	var r requestBody
 	if err := json.Unmarshal([]byte(req.Body), &r); err != nil || r.Prompt == "" {
+		fmt.Printf("Invalid request body: %v, Body: %s\n", err, req.Body)
 		return clientError(400, "invalid request body, need JSON with field 'prompt'")
 	}
+	fmt.Printf("Parsed prompt: %s\n", r.Prompt)
 
 	// Call OpenAI Chat Completions endpoint
 	payload := map[string]interface{}{
@@ -61,8 +67,11 @@ func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.API
 		},
 	}
 	bodyBytes, _ := json.Marshal(payload)
+	fmt.Printf("Sending payload to OpenAI: %s\n", string(bodyBytes))
+
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(bodyBytes))
 	if err != nil {
+		fmt.Printf("Error creating HTTP request: %v\n", err)
 		return serverError(err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -70,14 +79,17 @@ func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.API
 
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
+		fmt.Printf("Error calling OpenAI: %v\n", err)
 		return serverError(err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Printf("Error reading OpenAI response: %v\n", err)
 		return serverError(err)
 	}
+	fmt.Printf("OpenAI response code: %d, body: %s\n", resp.StatusCode, string(respBody))
 
 	return events.APIGatewayProxyResponse{
 		StatusCode:      resp.StatusCode,
@@ -88,6 +100,7 @@ func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.API
 }
 
 func clientError(code int, msg string) (events.APIGatewayProxyResponse, error) {
+	fmt.Printf("Client error %d: %s\n", code, msg)
 	b, _ := json.Marshal(map[string]string{"error": msg})
 	return events.APIGatewayProxyResponse{
 		StatusCode:      code,
@@ -98,6 +111,7 @@ func clientError(code int, msg string) (events.APIGatewayProxyResponse, error) {
 }
 
 func serverError(err error) (events.APIGatewayProxyResponse, error) {
+	fmt.Printf("Server error: %v\n", err)
 	b, _ := json.Marshal(map[string]string{"error": err.Error()})
 	return events.APIGatewayProxyResponse{
 		StatusCode:      502,
