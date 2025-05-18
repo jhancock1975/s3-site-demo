@@ -58,4 +58,38 @@ jobs:
 
           for fn in $functions; do
             echo "=== Deploying lambda/$fn ==="
-            pushd "la
+            pushd "lambda/$fn"
+
+            # Only run go-mod steps if this function has its own go.mod
+            if [ -f go.mod ]; then
+              export GO111MODULE=on
+              echo "→ Tidying module (go.mod & go.sum)"
+              go mod tidy
+              echo "→ Downloading Go modules for $fn"
+              go mod download
+            else
+              echo "→ No go.mod found in lambda/$fn, skipping module download."
+            fi
+
+            echo "→ Building $fn"
+            GOOS=linux GOARCH=amd64 go build -mod=readonly -o bootstrap *.go
+
+            echo "→ Zipping $fn"
+            zip -q "${fn}.zip" bootstrap
+
+            echo "→ Publishing $fn to Lambda"
+            if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
+              aws lambda create-function \
+                --function-name "$fn" \
+                --runtime provided.al2 \
+                --role arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role \
+                --handler bootstrap \
+                --zip-file fileb://"${fn}.zip"
+            else
+              aws lambda update-function-code \
+                --function-name "$fn" \
+                --zip-file fileb://"${fn}.zip"
+            fi
+
+            popd
+          done
