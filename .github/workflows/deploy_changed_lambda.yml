@@ -2,7 +2,8 @@ name: Deploy Changed Go Lambda Functions
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
       - 'lambda/**'
   pull_request:
@@ -20,7 +21,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -41,17 +42,14 @@ jobs:
         id: find_functions
         run: |
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
-          # 1) list all changed .go files under lambda/
-          # 2) strip 'lambda/' prefix, then take only the first path element (dir name)
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
-            | sed 's|^lambda/||' \
-            | cut -d'/' -f1 \
+            | sed 's|lambda/||;s|\.go||' \
             | sort -u \
             | tr '\n' ' ')
           echo "functions=$CHANGED" >> $GITHUB_ENV
           echo "Changed functions: $CHANGED"
 
-      - name: Deploy changed functions
+      - name: Build, zip, and deploy changed lambdas
         if: env.functions != ''
         run: |
           set -euo pipefail
@@ -61,18 +59,19 @@ jobs:
             echo "=== Deploying lambda/$fn ==="
             pushd "lambda/$fn"
 
-            # Ensure Go modules mode is on and download all dependencies
-            export GO111MODULE=on
-            echo "→ Downloading Go modules for $fn"
-            go mod download ./...
+            echo "→ Tidying module (go.mod & go.sum)"
+            GO111MODULE=on go mod tidy
 
-            # Build the Go binary
+            echo "→ Downloading all modules"
+            GO111MODULE=on go mod download
+
+            echo "→ Building $fn"
             GOOS=linux GOARCH=amd64 go build -mod=readonly -o bootstrap *.go
 
-            # Zip the binary
+            echo "→ Zipping $fn"
             zip -q "${fn}.zip" bootstrap
 
-            # Create or update the Lambda function
+            echo "→ Deploying $fn"
             if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
               aws lambda create-function \
                 --function-name "$fn" \
