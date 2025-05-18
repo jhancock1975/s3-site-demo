@@ -42,19 +42,15 @@ jobs:
         id: find_functions
         run: |
           echo "Comparing ${GITHUB_EVENT_BEFORE} → ${GITHUB_SHA}"
-          git fetch --no-tags origin main
-
-          # Diff only the .go files under lambda/, strip path & extension, then extract the directory name
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'lambda/**/*.go' \
-            | sed 's|lambda/||;s|\.go||' \
-            | awk -F/ '{print $1}' \
+            | sed 's|^lambda/||' \
+            | cut -d'/' -f1 \
             | sort -u \
             | tr '\n' ' ')
-          
           echo "functions=$CHANGED" >> $GITHUB_ENV
           echo "Changed functions: $CHANGED"
 
-      - name: Build, zip, and deploy changed lambdas
+      - name: Build, zip, and deploy changed functions
         if: env.functions != ''
         run: |
           set -euo pipefail
@@ -62,34 +58,4 @@ jobs:
 
           for fn in $functions; do
             echo "=== Deploying lambda/$fn ==="
-            pushd "lambda/$fn"
-
-            echo "→ Tidying module (go.mod & go.sum)"
-            export GO111MODULE=on
-            go mod tidy
-
-            echo "→ Downloading all modules"
-            go mod download
-
-            echo "→ Building $fn"
-            GOOS=linux GOARCH=amd64 go build -mod=readonly -o bootstrap *.go
-
-            echo "→ Zipping $fn"
-            zip -q "${fn}.zip" bootstrap
-
-            echo "→ Publishing $fn to Lambda"
-            if ! aws lambda get-function --function-name "$fn" >/dev/null 2>&1; then
-              aws lambda create-function \
-                --function-name "$fn" \
-                --runtime provided.al2 \
-                --role arn:aws:iam::${ACCOUNT_ID}:role/lambda_exec_role \
-                --handler bootstrap \
-                --zip-file fileb://"${fn}.zip"
-            else
-              aws lambda update-function-code \
-                --function-name "$fn" \
-                --zip-file fileb://"${fn}.zip"
-            fi
-
-            popd
-          done
+            pushd "la
