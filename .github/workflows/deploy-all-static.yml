@@ -1,0 +1,44 @@
+name: Deploy All Static Assets to S3
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm full deployment'
+        required: true
+        default: 'no'
+
+jobs:
+  deploy-all-static:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'yes'
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync all static files to S3
+        run: |
+          aws s3 sync static/ s3://taptupo.com/ \
+            --delete \
+            --exclude ".git/*" \
+            --cache-control "max-age=86400"
+          
+      - name: Invalidate CloudFront distribution
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Done
+        run: echo "Full static deploy complete."
