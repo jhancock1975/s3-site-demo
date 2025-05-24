@@ -37,15 +37,16 @@ cat > trust-policy.json <<EOF
 }
 EOF
 
-# 3.2 Create the role
-aws iam create-role \
-  --role-name lambda-cognito-role \
-  --assume-role-policy-document file://trust-policy.json
-
-# 3.3 Attach basic execution policy
-aws iam attach-role-policy \
-  --role-name lambda-cognito-role \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+# Check if role exists first
+aws iam get-role --role-name lambda-cognito-role > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    # Role doesn't exist, create it
+    aws iam create-role \
+        --role-name lambda-cognito-role \
+        --assume-role-policy-document file://trust-policy.json
+else
+    echo "Role lambda-cognito-role already exists, skipping creation..."
+fi
 
 # 3.4 Inline policy: allow reading your bucket
 cat > s3-read-policy.json <<EOF
@@ -98,6 +99,7 @@ INTEGRATION_ID=$(aws apigatewayv2 create-integration \
   --api-id ${API_ID} \
   --integration-type AWS_PROXY \
   --integration-uri arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/arn:aws:lambda:${ACCOUNT_ID}:${REGION}:function:serveIndex/invocations \
+  --payload-format-version "2.0"
   --region ${REGION} \
   --query IntegrationId --output text)
 
