@@ -38,22 +38,18 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	key := "index-pending.html"
 
 	// extract cognito:groups claim
-	if raw, ok := req.RequestContext.Authorizer.JWT.Claims["cognito:groups"]; ok {
+	if rawClaim, exists := req.RequestContext.Authorizer.JWT.Claims["cognito:groups"]; exists {
 		var groups []string
-		switch v := raw.(type) {
-		case []interface{}:
-			for _, g := range v {
-				if s, ok := g.(string); ok {
-					groups = append(groups, s)
-				}
-			}
-		case string:
-			if strings.HasPrefix(v, "[") {
-				_ = json.Unmarshal([]byte(v), &groups)
-			} else {
-				groups = []string{v}
-			}
+
+		// Handle the claim as a string
+		rawClaimStr := rawClaim
+		if strings.HasPrefix(rawClaimStr, "[") {
+			_ = json.Unmarshal([]byte(rawClaimStr), &groups)
+		} else {
+			groups = []string{rawClaimStr}
 		}
+
+		// Check if user is in approved group
 		for _, g := range groups {
 			if g == "Approved users" {
 				key = "index.html"

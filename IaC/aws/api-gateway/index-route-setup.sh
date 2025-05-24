@@ -8,24 +8,22 @@ trap 'echo "❌ Error on line $LINENO"' ERR
 : "${USER_POOL_ID:?Need to set USER_POOL_ID}"
 : "${CLIENT_ID:?Need to set CLIENT_ID}"
 : "${BUCKET_NAME:?Need to set BUCKET_NAME}"
-    
 
-# Change to project root directory (in case script is run from elsewhere)
-cd "$(dirname "$0")"
-PROJECT_ROOT=$(pwd)
+
 
 echo "🔨 Building Lambda function..."
 # Navigate to Lambda directory and build using Make
-cd "${PROJECT_ROOT}/lambda/index-authorizer"
+pushd .
+script_dir=$(pwd)
+cd "../../../lambda/index-authorizer"
 make clean package
 
 # Copy deployment package to API Gateway setup directory
 echo "📦 Copying deployment package..."
-cp deployment.zip "${PROJECT_ROOT}/IaC/aws/api-gateway/"
+cp deployment.zip $script_dir
 
 # Change to API Gateway setup directory
-cd "${PROJECT_ROOT}/IaC/aws/api-gateway"
-
+popd
 
 # 3.1 Trust policy for Lambda
 cat > trust-policy.json <<EOF
@@ -70,7 +68,7 @@ aws iam put-role-policy \
 # 5.3 Create the function (with BUCKET_NAME env var)
 aws lambda create-function \
   --function-name serveIndex \
-  --runtime go1.x \
+  --runtime provided.al2023 \
   --handler main \
   --zip-file fileb://deployment.zip \
   --role arn:aws:iam::${ACCOUNT_ID}:role/lambda-cognito-role \
